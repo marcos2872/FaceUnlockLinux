@@ -4,51 +4,73 @@ import sys
 
 
 class OverlayApp:
-    """Gerencia a janela de overlay como um processo externo para evitar crash fatal no PAM."""
+    """Gerencia a janela de overlay de forma isolada e segura."""
 
     def __init__(self, username):
         self.process = None
 
-        # Só tenta se houver display
-        if not os.environ.get("DISPLAY") and not os.environ.get("WAYLAND_DISPLAY"):
+        # Se não houver sinal de display, aborta silenciosamente
+        display = os.environ.get("DISPLAY") or ":0"
+        wayland = os.environ.get("WAYLAND_DISPLAY")
+
+        if not display and not wayland:
             return
 
         try:
-            # Localiza o script da janela
             current_dir = os.path.dirname(os.path.abspath(__file__))
             window_script = os.path.join(current_dir, "overlay_window.py")
             python_exe = sys.executable
 
-            # Se rodando como root (PAM/Polkit), tenta rodar o overlay como o usuário real
-            # No Linux, a variável SUDO_USER ou LOGNAME nos diz quem é o usuário real
-            real_user = os.environ.get("SUDO_USER") or os.environ.get("LOGNAME")
+            # Detecta o usuário real para evitar rodar interface como root
+            real_user = os.environ.get("SUDO_USER") or os.environ.get("USER")
+            if real_user == "root" or not real_user:
+                # Tenta pegar o dono da pasta home mais comum
+                import pwd
+
+                real_user = pwd.getpwuid(os.getuid())[0]
+                if real_user == "root":
+                    # Busca o usuário logado via comando 'who' se necessário
+                    try:
+                        real_user = subprocess.check_output(["whoami"]).decode().strip()
+                    except Exception:
+                        real_user = "marcos"  # Fallback seguro para seu sistema
 
             cmd = [python_exe, window_script, username]
 
-            # Se somos root e sabemos quem é o usuário real, usamos 'sudo -u'
-            if os.geteuid() == 0 and real_user and real_user != "root":
-                cmd = ["sudo", "-u", real_user] + cmd
+            # Prepara ambiente limpo para o usuário
+            env = {
+                "DISPLAY": display,
+                "PATH": os.environ.get("PATH", ""),
+                "HOME": f"/home/{real_user}",
+                "XDG_RUNTIME_DIR": f"/run/user/{os.getuid() if os.getuid() != 0 else 1000}",
+            }
+            if wayland:
+                env["WAYLAND_DISPLAY"] = wayland
 
-            # Lança o processo de forma independente
+            # Se somos root, usamos 'sudo -u' para rodar como usuário comum
+            if os.geteuid() == 0 and real_user != "root":
+                cmd = ["sudo", "-u", real_user, "DISPLAY=" + display] + cmd
+
+            # Lança o processo de forma totalmente independente
             self.process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
-                env=os.environ.copy(),
+                start_new_session=True,  # Isola o processo
+                env=env,
             )
         except Exception:
             self.process = None
 
     def update(self, message, progress=0):
-        # O update visual via processo externo exigiria IPC (sockets/pipes).
-        # Por enquanto, focamos na estabilidade (abrir e fechar a janela).
         pass
 
     def close(self):
         if self.process:
             try:
+                # Tenta fechar de forma amigável
                 self.process.terminate()
-                self.process.wait(timeout=0.5)
+                self.process.wait(timeout=0.2)
             except Exception:
                 try:
                     self.process.kill()
