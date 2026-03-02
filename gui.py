@@ -17,6 +17,7 @@ from storage import list_users, delete_user, save_user_data, load_user_data, BAS
 from core import process_face_frame
 from config import load_config, save_config
 from system_integration import check_integration, update_integration
+from liveness import check_blink
 import face_recognition
 
 class EnrollmentDialog(QDialog):
@@ -52,7 +53,8 @@ class EnrollmentDialog(QDialog):
         ret, frame = self.cap.read()
         if not ret: return
         frame = cv2.flip(frame, 1)
-        face_loc, encoding = process_face_frame(frame)
+        # Fix: Unpack 3 values
+        face_loc, encoding, landmarks = process_face_frame(frame)
         if face_loc is not None:
             top, right, bottom, left = face_loc
             cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
@@ -82,7 +84,7 @@ class AuthenticationDialog(QDialog):
         self.saved_embeddings = saved_embeddings
         self.threshold = threshold
         self.setWindowTitle(f"Testando Reconhecimento: {username}")
-        self.setFixedSize(660, 580)
+        self.setFixedSize(660, 600)
         
         layout = QVBoxLayout()
         self.status_label = QLabel("Aguardando detecção...")
@@ -95,12 +97,19 @@ class AuthenticationDialog(QDialog):
         self.video_label.setStyleSheet("border: 2px solid #555; background-color: black;")
         layout.addWidget(self.video_label)
         
+        self.blink_label = QLabel("Piscadas detectadas: 0")
+        self.blink_label.setStyleSheet("color: #e67e22; font-weight: bold;")
+        self.blink_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.blink_label)
+        
         self.btn_close = QPushButton("Fechar")
         self.btn_close.clicked.connect(self.close)
         layout.addWidget(self.btn_close)
         
         self.setLayout(layout)
         self.cap = cv2.VideoCapture(0)
+        self.blinks = 0
+        self.eye_closed = False
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_frame)
         self.timer.start(33)
@@ -109,19 +118,36 @@ class AuthenticationDialog(QDialog):
         ret, frame = self.cap.read()
         if not ret: return
         frame = cv2.flip(frame, 1)
-        face_loc, current_encoding = process_face_frame(frame)
+        # Fix: Unpack 3 values
+        face_loc, current_encoding, landmarks = process_face_frame(frame)
         
-        if face_loc is not None:
+        if face_loc is not None and landmarks is not None:
+            # 1. Verificar piscada
+            is_blinking = check_blink(landmarks)
+            if is_blinking:
+                self.eye_closed = True
+            elif not is_blinking and self.eye_closed:
+                self.blinks += 1
+                self.eye_closed = False
+                self.blink_label.setText(f"Piscadas detectadas: {self.blinks}")
+            
+            # 2. Desenhar marcos dos olhos para feedback visual
+            for eye in ['left_eye', 'right_eye']:
+                for point in landmarks[eye]:
+                    cv2.circle(frame, point, 2, (0, 255, 255), -1)
+
+            # 3. Calcular similaridade
             distances = face_recognition.face_distance(self.saved_embeddings, current_encoding)
             min_dist = min(distances) if len(distances) > 0 else 1.0
             
             if min_dist <= self.threshold:
                 color = (0, 255, 0)
-                self.status_label.setText(f"SUCESSO! (Distância: {min_dist:.4f})")
-                self.status_label.setStyleSheet("color: green; font-weight: bold; font-size: 16px;")
+                txt = "RECONHECIDO" if self.blinks > 0 else "AGUARDANDO PISCADA"
+                self.status_label.setText(f"{txt} (Dist: {min_dist:.3f})")
+                self.status_label.setStyleSheet(f"color: {'green' if self.blinks > 0 else '#f39c12'}; font-weight: bold; font-size: 16px;")
             else:
                 color = (0, 0, 255)
-                self.status_label.setText(f"NÃO RECONHECIDO (Distância: {min_dist:.4f})")
+                self.status_label.setText(f"NÃO RECONHECIDO (Dist: {min_dist:.3f})")
                 self.status_label.setStyleSheet("color: red; font-weight: bold; font-size: 16px;")
             
             top, right, bottom, left = face_loc
