@@ -26,10 +26,10 @@ class EnrollmentDialog(QDialog):
         super().__init__(parent)
         self.username = username
         self.setWindowTitle(f"Cadastrando Rosto: {username}")
-        self.setFixedSize(660, 580)
+        self.setFixedSize(660, 620)
         layout = QVBoxLayout()
-        self.status_label = QLabel(f"Olhe para a câmera e mova levemente o rosto...")
-        self.status_label.setStyleSheet("font-size: 14px; font-weight: bold;")
+        self.status_label = QLabel(f"Olhe para a câmera e PISQUE os olhos para validar...")
+        self.status_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #e67e22;")
         self.status_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.status_label)
         self.video_label = QLabel()
@@ -39,9 +39,15 @@ class EnrollmentDialog(QDialog):
         self.progress = QProgressBar()
         self.progress.setRange(0, 30)
         layout.addWidget(self.progress)
+        self.blink_status = QLabel("Vivacidade: ❌ (Pisque para validar)")
+        self.blink_status.setStyleSheet("font-weight: bold; color: red;")
+        self.blink_status.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.blink_status)
         self.setLayout(layout)
         self.cap = cv2.VideoCapture(0)
         self.embeddings = []
+        self.blinks = 0
+        self.eye_closed = False
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_frame)
         self.timer.start(33)
@@ -51,12 +57,34 @@ class EnrollmentDialog(QDialog):
         if not ret: return
         frame = cv2.flip(frame, 1)
         face_loc, encoding, landmarks = process_face_frame(frame)
-        if face_loc is not None:
+        if face_loc is not None and landmarks is not None:
+            # 1. Verificar piscada
+            is_blinking = check_blink(landmarks)
+            if is_blinking: self.eye_closed = True
+            elif not is_blinking and self.eye_closed:
+                self.blinks += 1
+                self.eye_closed = False
+                self.blink_status.setText("Vivacidade: ✅ Confirmada!")
+                self.blink_status.setStyleSheet("font-weight: bold; color: green;")
+                self.status_label.setStyleSheet("font-size: 14px; font-weight: bold; color: green;")
+
+            # 2. Desenhar marcos dos olhos
+            for eye in ['left_eye', 'right_eye']:
+                for point in landmarks[eye]: cv2.circle(frame, point, 2, (0, 255, 255), -1)
+
+            # 3. Coletar embeddings
+            if len(self.embeddings) < 30:
+                self.embeddings.append(encoding)
+                self.progress.setValue(len(self.embeddings))
+            
+            # Finalizar apenas se tiver 30 frames E pelo menos 1 piscada
+            if len(self.embeddings) >= 30 and self.blinks > 0:
+                self.finalize_enrolment()
+            
             top, right, bottom, left = face_loc
-            cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
-            self.embeddings.append(encoding)
-            self.progress.setValue(len(self.embeddings))
-            if len(self.embeddings) >= 30: self.finalize_enrolment()
+            color = (0, 255, 0) if self.blinks > 0 else (0, 255, 255)
+            cv2.rectangle(frame, (left, top), (right, bottom), color, 2)
+
         rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         h, w, ch = rgb_image.shape
         q_img = QImage(rgb_image.data, w, h, ch * w, QImage.Format_RGB888)
@@ -85,7 +113,6 @@ class LogDialog(QDialog):
         layout.addWidget(self.text_area)
         self.refresh_logs()
         self.setLayout(layout)
-        
     def refresh_logs(self):
         logs = get_last_logs()
         self.text_area.setText("".join(logs))
@@ -121,7 +148,6 @@ class AuthenticationDialog(QDialog):
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_frame)
         self.timer.start(33)
-
     def update_frame(self):
         ret, frame = self.cap.read()
         if not ret: return
@@ -143,8 +169,7 @@ class AuthenticationDialog(QDialog):
                 txt = "RECONHECIDO" if self.blinks > 0 else "AGUARDANDO PISCADA"
                 self.status_label.setText(f"{txt} (Dist: {min_dist:.3f})")
                 self.status_label.setStyleSheet(f"color: {'green' if self.blinks > 0 else '#f39c12'}; font-weight: bold; font-size: 16px;")
-                if self.blinks > 0: # Sucesso no teste GUI
-                    log_access(self.username, True, "Manual GUI Test Success")
+                if self.blinks > 0: log_access(self.username, True, "Manual GUI Test Success")
             else:
                 color = (0, 0, 255)
                 self.status_label.setText(f"NÃO RECONHECIDO (Dist: {min_dist:.3f})")
@@ -158,7 +183,6 @@ class AuthenticationDialog(QDialog):
         h, w, ch = rgb_image.shape
         q_img = QImage(rgb_image.data, w, h, ch * w, QImage.Format_RGB888)
         self.video_label.setPixmap(QPixmap.fromImage(q_img))
-
     def closeEvent(self, event):
         self.timer.stop()
         if hasattr(self, 'cap') and self.cap.isOpened(): self.cap.release()
@@ -175,7 +199,6 @@ class FaceUnlockApp(QMainWindow):
         self.tabs.addTab(self.create_faces_tab(), "Gerenciar Faces")
         self.tabs.addTab(self.create_test_tab(), "Testar Desbloqueio")
         self.tabs.addTab(self.create_settings_tab(), "Integração & Sistema")
-
     def create_faces_tab(self):
         widget = QWidget(); layout = QVBoxLayout()
         layout.addWidget(QLabel("<h2>Usuários Cadastrados</h2>"))
@@ -191,40 +214,35 @@ class FaceUnlockApp(QMainWindow):
         btn_layout.addWidget(btn_add); btn_layout.addWidget(btn_remove)
         layout.addLayout(btn_layout); widget.setLayout(layout)
         return widget
-
     def on_user_selected(self, item): self.update_integration_checks()
     def on_add_user(self):
         username, ok = QInputDialog.getText(self, "Novo Usuário", "Digite o nome para o cadastro:")
         if ok and username:
             dialog = EnrollmentDialog(username, self)
-            if dialog.exec(): self.refresh_user_list()
-
+            if dialog.exec():
+                QMessageBox.information(self, "Sucesso", f"Usuário '{username}' cadastrado com sucesso!")
+                self.refresh_user_list()
     def on_remove_user(self):
         item = self.user_list.currentItem()
         if not item or item.text() == "Nenhum usuário cadastrado.": return
         if QMessageBox.question(self, "Confirmação", f"Remover '{item.text()}'?") == QMessageBox.Yes:
             if delete_user(item.text()): self.refresh_user_list()
-
     def create_test_tab(self):
         widget = QWidget(); layout = QVBoxLayout()
         layout.addWidget(QLabel("<h2>Teste de Reconhecimento</h2>"))
         layout.addWidget(QLabel("Escolha o usuário na primeira aba e clique abaixo para testar."))
         btn_test = QPushButton("Iniciar Teste de Câmera")
-        btn_test.setMinimumHeight(60)
-        btn_test.clicked.connect(self.on_test_auth)
+        btn_test.setMinimumHeight(60); btn_test.clicked.connect(self.on_test_auth)
         layout.addWidget(btn_test)
         layout.addStretch(); widget.setLayout(layout)
         return widget
-
     def on_test_auth(self):
         item = self.user_list.currentItem()
         if not item or item.text() == "Nenhum usuário cadastrado.":
             QMessageBox.warning(self, "Aviso", "Selecione um usuário primeiro.")
             return
         embeddings, meta = load_user_data(item.text())
-        if embeddings is not None:
-            AuthenticationDialog(item.text(), embeddings, threshold=self.config["threshold"], parent=self).exec()
-
+        if embeddings is not None: AuthenticationDialog(item.text(), embeddings, threshold=self.config["threshold"], parent=self).exec()
     def create_settings_tab(self):
         widget = QWidget(); layout = QVBoxLayout()
         layout.addWidget(QLabel("<h2>Integração com o Sistema</h2>"))
@@ -239,11 +257,9 @@ class FaceUnlockApp(QMainWindow):
         btn_apply_pam.setStyleSheet("background-color: #3498db; color: white; font-weight: bold; min-height: 40px;")
         btn_apply_pam.clicked.connect(self.on_apply_integration)
         layout.addWidget(btn_apply_pam)
-        
         btn_view_logs = QPushButton("Visualizar Logs de Acesso")
         btn_view_logs.clicked.connect(self.on_view_logs)
         layout.addWidget(btn_view_logs)
-        
         layout.addWidget(QLabel("<hr>"))
         layout.addWidget(QLabel("<h2>Sensibilidade do Sensor</h2>"))
         form_layout = QFormLayout()
@@ -253,13 +269,10 @@ class FaceUnlockApp(QMainWindow):
         layout.addLayout(form_layout)
         btn_save_config = QPushButton("Salvar Configurações")
         btn_save_config.clicked.connect(self.on_save_settings)
-        layout.addWidget(btn_save_config)
-        layout.addStretch(); widget.setLayout(layout)
+        layout.addWidget(btn_save_config); layout.addStretch(); widget.setLayout(layout)
         self.update_integration_checks()
         return widget
-
     def on_view_logs(self): LogDialog(self).exec()
-
     def update_integration_checks(self):
         item = self.user_list.currentItem()
         if not item or item.text() == "Nenhum usuário cadastrado.": return
@@ -268,7 +281,6 @@ class FaceUnlockApp(QMainWindow):
         self.check_sudo.setChecked(check_integration("sudo", username) == True)
         self.check_lock.setChecked(check_integration("lockscreen", username) == True)
         self.check_login.setChecked(check_integration("login", username) == True)
-
     def on_apply_integration(self):
         item = self.user_list.currentItem()
         if not item or item.text() == "Nenhum usuário cadastrado.": return
@@ -277,11 +289,9 @@ class FaceUnlockApp(QMainWindow):
             services = {"sudo": self.check_sudo.isChecked(), "lockscreen": self.check_lock.isChecked(), "login": self.check_login.isChecked()}
             for svc, enable in services.items(): update_integration(svc, username, enable)
             QMessageBox.information(self, "Sucesso", "Integração atualizada!")
-
     def on_save_settings(self):
         self.config["threshold"] = self.spin_threshold.value()
         save_config(self.config); QMessageBox.information(self, "Sucesso", "Configurações salvas!")
-
     def refresh_user_list(self):
         self.user_list.clear()
         users = list_users()

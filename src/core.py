@@ -13,6 +13,7 @@ from liveness import check_blink
 def capture_embeddings(username, num_frames=30):
     """
     Captura N frames da webcam, detecta o rosto e extrai os embeddings.
+    Exige detecção de vivacidade (piscada) para validar o cadastro.
     """
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
@@ -21,44 +22,57 @@ def capture_embeddings(username, num_frames=30):
 
     embeddings = []
     frames_captured = 0
+    blinks_detected = 0
+    eye_closed = False
     
     print(f"Iniciando cadastro para o usuário: {username}")
-    print("Olhe para a câmera e mova levemente o rosto...")
+    print("Olhe para a câmera e PISQUE os olhos para validar o cadastro...")
 
-    while frames_captured < num_frames:
+    while frames_captured < num_frames or blinks_detected == 0:
         ret, frame = cap.read()
-        if not ret:
-            break
+        if not ret: break
 
         frame = cv2.flip(frame, 1)
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        
+        face_landmarks_list = face_recognition.face_landmarks(rgb_frame)
         face_locations = face_recognition.face_locations(rgb_frame)
 
-        if len(face_locations) == 1:
-            encoding = face_recognition.face_encodings(rgb_frame, face_locations)[0]
-            embeddings.append(encoding)
-            frames_captured += 1
+        if len(face_locations) == 1 and len(face_landmarks_list) == 1:
+            landmarks = face_landmarks_list[0]
+            
+            # Verificar piscada durante o cadastro
+            is_blinking = check_blink(landmarks)
+            if is_blinking:
+                eye_closed = True
+            elif not is_blinking and eye_closed:
+                blinks_detected += 1
+                eye_closed = False
+                print(f"\n[OK] Vivacidade confirmada! Piscada detectada.")
+
+            # Capturar embeddings até atingir o limite
+            if frames_captured < num_frames:
+                encoding = face_recognition.face_encodings(rgb_frame, face_locations)[0]
+                embeddings.append(encoding)
+                frames_captured += 1
             
             percent = int((frames_captured / num_frames) * 100)
-            sys_stdout_write = f"\rProgresso: {percent}% [{frames_captured}/{num_frames}]"
-            print(sys_stdout_write, end="", flush=True)
+            status = f"\rProgresso: {percent}% | Piscada: {'✅' if blinks_detected > 0 else '❌'}"
+            print(status, end="", flush=True)
             
             top, right, bottom, left = face_locations[0]
-            cv2.rectangle(frame, (left, top), (right, bottom), (0, 255, 0), 2)
-        elif len(face_locations) > 1:
-            print("\rAviso: Mais de um rosto detectado. Fique sozinho no frame.", end="", flush=True)
-        else:
-            print("\rAviso: Nenhum rosto detectado. Aproxime-se.", end="", flush=True)
-
+            color = (0, 255, 0) if blinks_detected > 0 else (0, 255, 255)
+            cv2.rectangle(frame, (left, top), (right, bottom), color, 2)
+        
         cv2.imshow('Face Unlock - Cadastro', frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
-            print("\nCadastro cancelado pelo usuário.")
+            print("\nCadastro cancelado.")
             break
 
     cap.release()
     cv2.destroyAllWindows()
     print("\n")
-    return embeddings
+    return embeddings if blinks_detected > 0 else None
 
 def process_face_frame(frame):
     """
