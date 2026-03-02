@@ -84,7 +84,14 @@ def capture_embeddings(username, num_frames=30):
         return None
 
 
-def authenticate_user(username, saved_embeddings, threshold=0.5, num_frames=15, show_preview=True):
+def authenticate_user(
+    username,
+    saved_embeddings,
+    threshold=0.5,
+    num_frames=15,
+    show_preview=True,
+    status_callback=None,
+):
     """
     Autentica um usuário comparando o frame atual com os embeddings salvos.
     Exige reconhecimento E vivacidade (piscada).
@@ -97,6 +104,9 @@ def authenticate_user(username, saved_embeddings, threshold=0.5, num_frames=15, 
     max_frames = num_frames * 3  # Tenta por até 3x o número de frames solicitados
 
     is_live = False
+
+    if status_callback:
+        status_callback("Face Unlock: Procurando Rosto...", 10)
 
     while frames_processed < max_frames:
         ret, frame = cap.read()
@@ -114,8 +124,11 @@ def authenticate_user(username, saved_embeddings, threshold=0.5, num_frames=15, 
             elif not is_blinking and eye_closed:
                 blinks_detected += 1
                 eye_closed = False
+                msg = f"Piscada {blinks_detected} detectada!"
                 if show_preview:
-                    print(f"\n[OK] Piscada {blinks_detected} detectada!")
+                    print(f"\n[OK] {msg}")
+                if status_callback:
+                    status_callback(f"Face Unlock: {msg}", 50)
 
             # 2. Verificar similaridade
             distances = face_recognition.face_distance(saved_embeddings, current_encoding)
@@ -124,6 +137,8 @@ def authenticate_user(username, saved_embeddings, threshold=0.5, num_frames=15, 
             if min_dist <= threshold:
                 matches_found += 1
                 color = (0, 255, 0)
+                if status_callback and blinks_detected == 0:
+                    status_callback("Rosto Reconhecido! PISQUE para confirmar.", 40)
             else:
                 color = (0, 0, 255)
 

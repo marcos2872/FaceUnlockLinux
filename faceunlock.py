@@ -5,6 +5,7 @@ import sys
 # Adicionar src ao path usando o caminho absoluto do script
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(SCRIPT_DIR, "src"))
+sys.path.append(os.path.join(SCRIPT_DIR, "src", "ui"))
 
 from core import authenticate_user, capture_embeddings  # noqa: E402
 from logger import log_access  # noqa: E402
@@ -30,6 +31,9 @@ def main():
     )
     auth_parser.add_argument(
         "--no-gui", action="store_true", help="Executa sem abrir janela de vídeo (modo PAM)"
+    )
+    auth_parser.add_argument(
+        "--overlay", action="store_true", help="Mostra feedback visual no topo da tela"
     )
 
     # Comando List (Listar Usuários)
@@ -63,17 +67,56 @@ def main():
 
     elif args.command == "auth":
         try:
+            # Se rodando como root (PAM/Polkit), tenta herdar o display do usuário logado
+            if os.geteuid() == 0:
+                if not os.environ.get("DISPLAY"):
+                    os.environ["DISPLAY"] = ":0"
+
+                # Suporte a Wayland (Comum no Fedora KDE)
+                if not os.environ.get("XDG_RUNTIME_DIR"):
+                    import glob
+
+                    run_dirs = glob.glob("/run/user/*")
+                    if run_dirs:
+                        os.environ["XDG_RUNTIME_DIR"] = run_dirs[0]
+
+                if not os.environ.get("WAYLAND_DISPLAY"):
+                    os.environ["WAYLAND_DISPLAY"] = "wayland-0"
+
+                # Tenta localizar o XAUTHORITY do usuário comum se não houver
+                if not os.environ.get("XAUTHORITY"):
+                    import glob
+
+                    auth_files = glob.glob("/run/user/*/xauth_*") or glob.glob(
+                        "/home/*/.Xauthority"
+                    )
+                    if auth_files:
+                        os.environ["XAUTHORITY"] = auth_files[0]
+
+            # Importação tardia do Overlay para evitar crash fatal na carga do módulo
+            from overlay import OverlayApp  # noqa: E402
+
             saved_embeddings, metadata = load_user_data(args.user)
             if saved_embeddings is None:
-                with open("/tmp/faceunlock_error.log", "a") as f:
-                    f.write(f"Erro: Usuário '{args.user}' não encontrado no storage.\n")
                 sys.exit(1)
+
+            overlay = None
+            if args.overlay:
+                try:
+                    overlay = OverlayApp(args.user)
+                except Exception:
+                    overlay = None  # Se o overlay falhar, continua silencioso
+
+            def status_update(msg, prog):
+                if overlay:
+                    overlay.update(msg, prog)
 
             is_authenticated = authenticate_user(
                 args.user,
                 saved_embeddings,
                 threshold=args.threshold,
                 show_preview=not args.no_gui,
+                status_callback=status_update,
             )
 
             # Logar o acesso (essencial para o PAM)
@@ -81,10 +124,16 @@ def main():
             log_access(args.user, is_authenticated, f"{access_type} | Threshold: {args.threshold}")
 
             if is_authenticated:
-                print(f"\n[OK] Bem-vindo, {args.user}! Autenticação bem sucedida.")
+                status_update("ACESSO CONCEDIDO! Bem-vindo.", 100)
+                import time
+
+                time.sleep(1)
                 sys.exit(0)
             else:
-                print(f"\n[FAIL] Autenticação falhou para {args.user}.")
+                status_update("FALHA NA AUTENTICAÇÃO.", 0)
+                import time
+
+                time.sleep(1)
                 sys.exit(1)
         except Exception as e:
             with open("/tmp/faceunlock_error.log", "a") as f:

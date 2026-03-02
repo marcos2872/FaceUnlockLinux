@@ -16,8 +16,8 @@ def get_pam_line(username):
     )
     python_path = sys.executable  # Usa o python do venv atual
     return (
-        f"auth sufficient pam_exec.so stdout {python_path} {script_path} "
-        f"auth --user {username} --no-gui"
+        f"auth sufficient pam_exec.so quiet {python_path} {script_path} "
+        f"auth --user {username} --no-gui --overlay"
     )
 
 
@@ -80,8 +80,15 @@ def update_integration(service_name, username, enable=True):
         with open(path) as f:
             lines = f.readlines()
 
-        # Remover linha se já existir (para atualizar ou desabilitar)
-        new_lines = [line_item for line_item in lines if line not in line_item]
+        # Define um padrão de busca para identificar a linha do Face Unlock de forma flexível
+        search_pattern = f"faceunlock.py auth --user {username}"
+
+        # Remover qualquer linha que contenha o padrão (mesmo que os parâmetros tenham mudado)
+        new_lines = [
+            line_item
+            for line_item in lines
+            if not (search_pattern in line_item and "pam_exec.so" in line_item)
+        ]
 
         if enable:
             # Inserir no topo (após o cabeçalho)
