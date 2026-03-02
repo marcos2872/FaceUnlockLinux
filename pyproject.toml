@@ -12,6 +12,7 @@ dependencies = [
     "opencv-python",
     "face-recognition",
     "ruff",
+    "pre-commit",
 ]
 
 [tool.ruff]

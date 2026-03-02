@@ -91,6 +91,27 @@ cd ~/.local/share/faceunlock
 
 ---
 
+## 🛠️ Desenvolvimento e Qualidade de Código
+
+Este projeto utiliza **Ruff** para linting e formatação, e **pre-commit** para garantir a qualidade do código antes de cada commit.
+
+### Configurando o ambiente de desenvolvimento:
+1. Instale as dependências (incluindo as de desenvolvimento):
+```bash
+./install_deps.sh
+```
+2. Instale os hooks do pre-commit:
+```bash
+./venv/bin/pre-commit install
+```
+
+### Comandos úteis:
+- **Formatar código**: `./venv/bin/ruff format .`
+- **Verificar erros**: `./venv/bin/ruff check --fix .`
+- **Rodar pre-commit manualmente**: `./venv/bin/pre-commit run --all-files`
+
+---
+
 ## 📁 Estrutura do Projeto
 
 - `faceunlock.py`: Ponto de entrada do CLI.
