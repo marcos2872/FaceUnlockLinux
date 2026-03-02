@@ -2,8 +2,9 @@ import argparse
 import sys
 import os
 
-# Adicionar src ao path
-sys.path.append(os.path.join(os.getcwd(), 'src'))
+# Adicionar src ao path usando o caminho absoluto do script
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(SCRIPT_DIR, 'src'))
 
 from core import capture_embeddings, authenticate_user
 from storage import save_user_data, load_user_data, list_users

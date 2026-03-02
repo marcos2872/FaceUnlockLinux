@@ -5,7 +5,9 @@ from datetime import datetime
 
 # Caminhos padrão
 SYSTEM_DIR = "/var/lib/faceunlock"
-LOCAL_DIR = os.path.join(os.getcwd(), "data", "faces")
+# Local absoluto da pasta data dentro do projeto
+SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+LOCAL_DIR = os.path.join(SCRIPT_DIR, "data", "faces")
 
 # Escolher o diretório base (prioriza o de sistema se existir)
 if os.path.exists(SYSTEM_DIR) and os.access(SYSTEM_DIR, os.W_OK):
