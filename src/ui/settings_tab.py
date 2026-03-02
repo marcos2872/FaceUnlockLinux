@@ -1,6 +1,6 @@
 import os
 
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, Qt
 from PySide6.QtWidgets import (
     QCheckBox,
     QDialog,
@@ -24,15 +24,30 @@ class LogDialog(QDialog):
         super().__init__(parent)
         self.script_dir = script_dir
         self.setWindowTitle("Logs de Acesso")
-        self.setWindowIcon(QIcon(os.path.join(script_dir, "images/icon.png")))
-        self.setFixedSize(600, 400)
+        self.setWindowIcon(QIcon(os.path.join(script_dir, "images", "icon.png")))
+        self.setFixedSize(700, 500)
+
         layout = QVBoxLayout()
+        layout.setContentsMargins(20, 20, 20, 20)
+
         self.text_area = QTextEdit()
         self.text_area.setReadOnly(True)
-        self.text_area.setStyleSheet(
-            "font-family: monospace; background-color: #2c3e50; color: #ecf0f1;"
-        )
+        self.text_area.setStyleSheet("""
+            QTextEdit {
+                font-family: 'JetBrains Mono', 'Fira Code', monospace; 
+                background-color: #1E1E1E; 
+                color: #30D158;
+                border-radius: 10px;
+                padding: 10px;
+            }
+        """)
         layout.addWidget(self.text_area)
+
+        btn_close = QPushButton("Fechar")
+        btn_close.setCursor(Qt.PointingHandCursor)
+        btn_close.clicked.connect(self.close)
+        layout.addWidget(btn_close)
+
         self.refresh_logs()
         self.setLayout(layout)
 
@@ -46,48 +61,82 @@ class SettingsTab(QWidget):
         super().__init__(parent)
         self.script_dir = script_dir
         self.main_app = parent
+
         layout = QVBoxLayout()
-        layout.addWidget(QLabel("<h2>Integração com o Sistema</h2>"))
-        self.selected_user_label = QLabel("<b>Usuário Selecionado:</b> (Selecione na primeira aba)")
-        self.selected_user_label.setStyleSheet("color: #e67e22; font-size: 14px;")
-        layout.addWidget(self.selected_user_label)
+        layout.setContentsMargins(40, 40, 40, 40)
+        layout.setSpacing(25)
+
+        header = QLabel("Integração & Sistema")
+        header.setStyleSheet("font-size: 28px; font-weight: bold; color: white;")
+        layout.addWidget(header)
+
+        # --- CARD 1: INTEGRAÇÃO PAM ---
+        card_pam = QWidget()
+        card_pam.setStyleSheet("background-color: #282828; border-radius: 15px;")
+        pam_layout = QVBoxLayout(card_pam)
+        pam_layout.setContentsMargins(20, 20, 20, 20)
+        pam_layout.setSpacing(15)
+
+        self.selected_user_label = QLabel("Selecione um usuário para configurar")
+        self.selected_user_label.setStyleSheet("color: #FF9F0A; font-weight: bold;")
+        pam_layout.addWidget(self.selected_user_label)
+
         self.check_sudo = QCheckBox("Habilitar para 'Sudo' (Terminal)")
-        self.check_lock = QCheckBox("Habilitar para 'Lock Screen' (Bloqueio de Tela)")
+        self.check_lock = QCheckBox("Habilitar para 'Lock Screen' (Bloqueio)")
         self.check_login = QCheckBox("Habilitar para 'Login' (SDDM)")
-        self.check_polkit = QCheckBox("Habilitar para 'Ações de Administrador' (Polkit)")
-        layout.addWidget(self.check_sudo)
-        layout.addWidget(self.check_lock)
-        layout.addWidget(self.check_login)
-        layout.addWidget(self.check_polkit)
-        btn_apply_pam = QPushButton("Aplicar Integração de Sistema (Requer Root)")
-        btn_apply_pam.setStyleSheet(
-            "background-color: #3498db; color: white; font-weight: bold; min-height: 40px;"
-        )
-        btn_apply_pam.clicked.connect(self.on_apply_integration)
-        layout.addWidget(btn_apply_pam)
-        btn_view_logs = QPushButton("Visualizar Logs de Acesso")
-        btn_view_logs.clicked.connect(self.on_view_logs)
-        layout.addWidget(btn_view_logs)
-        layout.addWidget(QLabel("<hr>"))
-        layout.addWidget(QLabel("<h2>Sensibilidade do Sensor</h2>"))
-        layout.addWidget(
-            QLabel(
-                "<p style='color: #7f8c8d;'>Defina o quão rigoroso o sistema deve ser. <br>"
-                "<b>0.2 (Rígido):</b> Máxima segurança, mas pode falhar se "
-                "a luz não estiver boa.<br>"
-                "<b>0.8 (Permissivo):</b> Mais fácil de entrar, mas menos seguro contra fotos.</p>"
-            )
-        )
+        self.check_polkit = QCheckBox("Habilitar para 'Ações de Admin' (Polkit)")
+
+        pam_layout.addWidget(self.check_sudo)
+        pam_layout.addWidget(self.check_lock)
+        pam_layout.addWidget(self.check_login)
+        pam_layout.addWidget(self.check_polkit)
+
+        self.btn_apply = QPushButton("Aplicar Configurações de Sistema")
+        self.btn_apply.setCursor(Qt.PointingHandCursor)
+        self.btn_apply.setMinimumHeight(45)
+        self.btn_apply.setStyleSheet("background-color: #0A84FF; color: white; font-weight: bold;")
+        self.btn_apply.clicked.connect(self.on_apply_integration)
+        pam_layout.addWidget(self.btn_apply)
+
+        layout.addWidget(card_pam)
+
+        # --- CARD 2: SENSIBILIDADE ---
+        card_sens = QWidget()
+        card_sens.setStyleSheet("background-color: #282828; border-radius: 15px;")
+        sens_layout = QVBoxLayout(card_sens)
+        sens_layout.setContentsMargins(20, 20, 20, 20)
+
+        sens_title = QLabel("Sensibilidade do Sensor")
+        sens_title.setStyleSheet("font-size: 16px; font-weight: bold; color: white;")
+        sens_layout.addWidget(sens_title)
+
+        sens_desc = QLabel("Defina o quão rigoroso o reconhecimento deve ser.")
+        sens_desc.setStyleSheet("color: #8E8E93; margin-bottom: 10px;")
+        sens_layout.addWidget(sens_desc)
+
         form_layout = QFormLayout()
         self.spin_threshold = QDoubleSpinBox()
         self.spin_threshold.setRange(0.2, 0.8)
         self.spin_threshold.setSingleStep(0.01)
         self.spin_threshold.setValue(self.main_app.config["threshold"])
-        form_layout.addRow("Valor Threshold:", self.spin_threshold)
-        layout.addLayout(form_layout)
-        btn_save_config = QPushButton("Salvar Configurações")
-        btn_save_config.clicked.connect(self.on_save_settings)
-        layout.addWidget(btn_save_config)
+        form_layout.addRow("Limiar (Threshold):", self.spin_threshold)
+        sens_layout.addLayout(form_layout)
+
+        btn_save = QPushButton("Salvar Preferências")
+        btn_save.setCursor(Qt.PointingHandCursor)
+        btn_save.clicked.connect(self.on_save_settings)
+        sens_layout.addWidget(btn_save)
+
+        layout.addWidget(card_sens)
+
+        # Botão de Logs (Estilo Secundário)
+        self.btn_logs = QPushButton("Ver Histórico de Acessos")
+        self.btn_logs.setCursor(Qt.PointingHandCursor)
+        self.btn_logs.setMinimumHeight(40)
+        self.btn_logs.setStyleSheet("background-color: #3A3A3C; color: #A0A0A0;")
+        self.btn_logs.clicked.connect(self.on_view_logs)
+        layout.addWidget(self.btn_logs)
+
         layout.addStretch()
         self.setLayout(layout)
         self.update_integration_checks()
@@ -98,16 +147,12 @@ class SettingsTab(QWidget):
     def update_integration_checks(self):
         username = self.main_app.get_selected_user()
         if not username:
-            self.selected_user_label.setText(
-                "<b>Usuário Selecionado:</b> (Selecione na primeira aba)"
-            )
-            self.check_sudo.setChecked(False)
-            self.check_lock.setChecked(False)
-            self.check_login.setChecked(False)
-            self.check_polkit.setChecked(False)
+            self.selected_user_label.setText("⚠️ Selecione um usuário na aba lateral")
+            for cb in [self.check_sudo, self.check_lock, self.check_login, self.check_polkit]:
+                cb.setChecked(False)
             return
 
-        self.selected_user_label.setText(f"<b>Configurando para:</b> {username}")
+        self.selected_user_label.setText(f"Configurando para: {username}")
         self.check_sudo.setChecked(check_integration("sudo", username) is True)
         self.check_lock.setChecked(check_integration("lockscreen", username) is True)
         self.check_login.setChecked(check_integration("login", username) is True)
@@ -135,4 +180,4 @@ class SettingsTab(QWidget):
     def on_save_settings(self):
         self.main_app.config["threshold"] = self.spin_threshold.value()
         save_config(self.main_app.config)
-        QMessageBox.information(self, "Sucesso", "Configurações salvas!")
+        QMessageBox.information(self, "Sucesso", "Preferências salvas!")
