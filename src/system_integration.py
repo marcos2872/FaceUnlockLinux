@@ -22,7 +22,7 @@ def check_integration(service_name, username):
     # Busca por termos essenciais em vez da linha exata
     search_term = f"faceunlock.py auth --user {username}"
     try:
-        with open(path, 'r') as f:
+        with open(path) as f:
             for line in f:
                 if search_term in line and "pam_exec.so" in line:
                     return True
@@ -41,7 +41,7 @@ def update_integration(service_name, username, enable=True):
         return False, f"Serviço {service_name} não encontrado."
 
     try:
-        with open(path, 'r') as f:
+        with open(path) as f:
             lines = f.readlines()
 
         # Remover linha se já existir (para atualizar ou desabilitar)

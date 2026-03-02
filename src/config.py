@@ -1,5 +1,5 @@
-import os
 import json
+import os
 
 CONFIG_PATH = os.path.expanduser("~/.config/faceunlock/settings.json")
 
@@ -15,7 +15,7 @@ def load_config():
         return DEFAULT_CONFIG
     
     try:
-        with open(CONFIG_PATH, 'r') as f:
+        with open(CONFIG_PATH) as f:
             return json.load(f)
     except:
         return DEFAULT_CONFIG

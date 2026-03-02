@@ -1,14 +1,14 @@
+import os
+import sys
+
 import cv2
 import face_recognition
-import numpy as np
-import time
-import sys
-import os
 
 # Adicionar src ao path para importar liveness
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(SCRIPT_DIR)
 from liveness import check_blink
+
 
 def capture_embeddings(username, num_frames=30):
     """
@@ -48,7 +48,7 @@ def capture_embeddings(username, num_frames=30):
             elif not is_blinking and eye_closed:
                 blinks_detected += 1
                 eye_closed = False
-                print(f"\n[OK] Vivacidade confirmada! Piscada detectada.")
+                print("\n[OK] Vivacidade confirmada! Piscada detectada.")
 
             # Capturar embeddings até atingir o limite
             if frames_captured < num_frames:

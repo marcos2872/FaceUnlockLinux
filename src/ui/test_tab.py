@@ -1,14 +1,16 @@
 import os
-import cv2
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QLabel, QPushButton, QMessageBox, QDialog)
-from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QImage, QPixmap, QIcon
-import face_recognition
 
-from storage import load_user_data
+import cv2
+import face_recognition
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QIcon, QImage, QPixmap
+from PySide6.QtWidgets import QDialog, QLabel, QMessageBox, QPushButton, QVBoxLayout, QWidget
+
 from core import process_face_frame
 from liveness import check_blink
 from logger import log_access
+from storage import load_user_data
+
 
 class AuthenticationDialog(QDialog):
     def __init__(self, username, saved_embeddings, script_dir, threshold=0.5, parent=None):

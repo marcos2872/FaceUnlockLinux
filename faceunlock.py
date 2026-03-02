@@ -1,14 +1,15 @@
 import argparse
-import sys
 import os
+import sys
 
 # Adicionar src ao path usando o caminho absoluto do script
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(SCRIPT_DIR, 'src'))
 
-from core import capture_embeddings, authenticate_user
-from storage import save_user_data, load_user_data, list_users
+from core import authenticate_user, capture_embeddings
 from logger import log_access
+from storage import list_users, load_user_data, save_user_data
+
 
 def main():
     parser = argparse.ArgumentParser(description="Face Unlock - Sistema de Reconhecimento Facial")
@@ -26,10 +27,10 @@ def main():
     auth_parser.add_argument("--no-gui", action="store_true", help="Executa sem abrir janela de vídeo (modo PAM)")
 
     # Comando List (Listar Usuários)
-    list_parser = subparsers.add_parser("list", help="Lista usuários cadastrados")
+    subparsers.add_parser("list", help="Lista usuários cadastrados")
 
     # Comando Init (Configuração de Sistema)
-    init_parser = subparsers.add_parser("init", help="Configura diretórios de sistema (requer root)")
+    subparsers.add_parser("init", help="Configura diretórios de sistema (requer root)")
 
     args = parser.parse_args()
 

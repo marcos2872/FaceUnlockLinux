@@ -1,5 +1,5 @@
-import os
 import logging
+import os
 
 LOG_DIR = os.path.expanduser("~/.cache/faceunlock")
 LOG_FILE = os.path.join(LOG_DIR, "access.log")
@@ -40,7 +40,7 @@ def get_last_logs(limit=20):
         return ["Nenhum log encontrado."]
     
     try:
-        with open(LOG_FILE, 'r') as f:
+        with open(LOG_FILE) as f:
             content = f.read()
             # Retornar o conteúdo formatado
             return content

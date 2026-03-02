@@ -1,17 +1,20 @@
-import sys
 import os
-from PySide6.QtWidgets import (QApplication, QMainWindow, QTabWidget)
+import sys
+
 from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QApplication, QMainWindow, QTabWidget
 
 # Adicionar src ao path
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(SCRIPT_DIR, 'src'))
 sys.path.append(os.path.join(SCRIPT_DIR, 'src', 'ui'))
 
-from config import load_config
 from faces_tab import FacesTab
-from test_tab import TestTab
 from settings_tab import SettingsTab
+from test_tab import TestTab
+
+from config import load_config
+
 
 class FaceUnlockApp(QMainWindow):
     def __init__(self):

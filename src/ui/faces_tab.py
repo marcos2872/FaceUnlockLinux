@@ -1,15 +1,25 @@
 import os
-import cv2
-import numpy as np
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QLabel, QPushButton,
-                             QListWidget, QHBoxLayout, QMessageBox, QInputDialog,
-                             QDialog, QProgressBar)
-from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QImage, QPixmap, QIcon
 
-from storage import list_users, delete_user, save_user_data
+import cv2
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QIcon, QImage, QPixmap
+from PySide6.QtWidgets import (
+    QDialog,
+    QHBoxLayout,
+    QInputDialog,
+    QLabel,
+    QListWidget,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
+
 from core import process_face_frame
 from liveness import check_blink
+from storage import delete_user, list_users, save_user_data
+
 
 class EnrollmentDialog(QDialog):
     def __init__(self, username, script_dir, parent=None):
@@ -20,7 +30,7 @@ class EnrollmentDialog(QDialog):
         self.setWindowIcon(QIcon(os.path.join(script_dir, 'images/icon.png')))
         self.setFixedSize(660, 620)
         layout = QVBoxLayout()
-        self.status_label = QLabel(f"Olhe para a câmera e PISQUE os olhos para validar...")
+        self.status_label = QLabel("Olhe para a câmera e PISQUE os olhos para validar...")
         self.status_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #e67e22;")
         self.status_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.status_label)

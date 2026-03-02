@@ -1,10 +1,12 @@
-import sys
 import os
+import sys
+
 import numpy as np
 
 # Adicionar src ao path
 sys.path.append(os.path.join(os.getcwd(), 'src'))
-from storage import save_user_data, load_user_data, list_users
+from storage import list_users, load_user_data, save_user_data
+
 
 def test_storage():
     print("--- Testando Modelo de Dados ---")
@@ -22,7 +24,7 @@ def test_storage():
     loaded_embs, metadata = load_user_data(username)
     
     if loaded_embs is not None:
-        print(f"Dados carregados com sucesso!")
+        print("Dados carregados com sucesso!")
         print(f"Usuário: {metadata['username']}")
         print(f"Número de embeddings: {len(loaded_embs)}")
         print(f"Shape: {loaded_embs.shape}")

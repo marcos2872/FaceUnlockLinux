@@ -1,7 +1,8 @@
-import os
 import json
-import numpy as np
+import os
 from datetime import datetime
+
+import numpy as np
 
 # Caminhos padrão
 SYSTEM_DIR = "/var/lib/faceunlock"
@@ -61,7 +62,7 @@ def load_user_data(username):
         return None, None
         
     embeddings = np.load(emb_path)
-    with open(meta_path, 'r', encoding='utf-8') as f:
+    with open(meta_path, encoding='utf-8') as f:
         metadata = json.load(f)
         
     return embeddings, metadata

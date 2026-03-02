@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def eye_aspect_ratio(eye_landmarks):
     """
     Calcula o Eye Aspect Ratio (EAR) para detectar se o olho está aberto ou fechado.

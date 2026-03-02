@@ -1,11 +1,23 @@
 import os
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QLabel, QPushButton,
-                             QMessageBox, QDialog, QDoubleSpinBox, QFormLayout, QCheckBox, QTextEdit)
+
 from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import (
+    QCheckBox,
+    QDialog,
+    QDoubleSpinBox,
+    QFormLayout,
+    QLabel,
+    QMessageBox,
+    QPushButton,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
 from config import save_config
-from system_integration import check_integration, update_integration
 from logger import get_last_logs
+from system_integration import check_integration, update_integration
+
 
 class LogDialog(QDialog):
     def __init__(self, script_dir, parent=None):
@@ -54,7 +66,7 @@ class SettingsTab(QWidget):
                                "<b>0.8 (Permissivo):</b> Mais fácil de entrar, mas menos seguro contra fotos.</p>"))
         form_layout = QFormLayout()
         self.spin_threshold = QDoubleSpinBox()
-        self.spin_threshold.setRange(0.2, 0.8); self.spin_threshold.setSingleStep(0.01); 
+        self.spin_threshold.setRange(0.2, 0.8); self.spin_threshold.setSingleStep(0.01) 
         self.spin_threshold.setValue(self.main_app.config["threshold"])
         form_layout.addRow("Valor Threshold:", self.spin_threshold)
         layout.addLayout(form_layout)
@@ -77,9 +89,9 @@ class SettingsTab(QWidget):
             return
         
         self.selected_user_label.setText(f"<b>Configurando para:</b> {username}")
-        self.check_sudo.setChecked(check_integration("sudo", username) == True)
-        self.check_lock.setChecked(check_integration("lockscreen", username) == True)
-        self.check_login.setChecked(check_integration("login", username) == True)
+        self.check_sudo.setChecked(check_integration("sudo", username))
+        self.check_lock.setChecked(check_integration("lockscreen", username))
+        self.check_login.setChecked(check_integration("login", username))
 
     def on_apply_integration(self):
         username = self.main_app.get_selected_user()
