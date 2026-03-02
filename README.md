@@ -29,33 +29,48 @@ O **Face Unlock** é um sistema de autenticação facial robusto escrito em Pyth
 
 ## 🚀 Instalação Rápida
 
-Clone o repositório e execute o script de instalação automatizada:
+Clone o repositório e execute os scripts de instalação em ordem:
 
+1. **Instalar dependências** (Sistema e IA):
 ```bash
-git clone <url-do-repositorio>
-cd FaceUnlock
-chmod +x install.sh
-./install.sh
+chmod +x install_deps.sh
+./install_deps.sh
 ```
 
-O script cuidará de instalar as dependências de sistema, criar o ambiente virtual, compilar as bibliotecas de IA e configurar os diretórios protegidos.
+2. **Configurar Aplicativo** (Move para `~/.local` e cria atalho no menu):
+```bash
+chmod +x setup_app.sh
+./setup_app.sh
+```
+
+O sistema será movido para `~/.local/share/faceunlock` e um atalho será criado no seu menu de aplicativos (KDE/Gnome/etc).
+
+---
+
+## 🗑️ Desinstalação
+
+Se precisar remover o sistema e todos os seus dados:
+```bash
+chmod +x uninstall.sh
+./uninstall.sh
+```
 
 ---
 
 ## 🖥️ Como Usar
 
 ### 1. Interface Gráfica (Recomendado)
-Para gerenciar suas faces e configurar o sistema:
+Você pode abrir o **Face Unlock** diretamente do seu menu de aplicativos ou via terminal:
 ```bash
-# Para configurações de sistema (PAM), rode com sudo
-sudo ./venv/bin/python gui.py
+~/.local/share/faceunlock/venv/bin/python ~/.local/share/faceunlock/gui.py
 ```
 - Vá em **Gerenciar Faces** para cadastrar seu primeiro rosto.
 - Vá em **Integração & Sistema** para habilitar o Face Unlock no `sudo`.
 
 ### 2. Linha de Comando (CLI)
-O sistema também pode ser operado via terminal:
+O sistema também pode ser operado via terminal a partir do diretório de instalação:
 ```bash
+cd ~/.local/share/faceunlock
 # Cadastro
 ./venv/bin/python faceunlock.py enrol --user seu_nome
 
