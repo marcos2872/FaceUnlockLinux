@@ -1,0 +1,15 @@
+# Dados sensíveis (embeddings e metadados)
+data/faces/
+
+# Ambiente Virtual
+venv/
+
+# Python cache e compilados
+__pycache__/
+*.py[cod]
+*$py.class
+src/__pycache__/
+
+# Configurações de IDE
+.vscode/
+.idea/

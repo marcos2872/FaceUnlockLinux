@@ -64,6 +64,24 @@ def capture_embeddings(username, num_frames=30):
     print("\n")
     return embeddings
 
+def process_face_frame(frame):
+    """
+    Processa um único frame: detecta face e retorna (face_location, encoding).
+    Utilizado pela GUI para evitar loops bloqueantes.
+    """
+    # Converter de BGR (OpenCV) para RGB (face_recognition)
+    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    
+    # Detectar rostos
+    face_locations = face_recognition.face_locations(rgb_frame)
+    
+    if len(face_locations) == 1:
+        # Extrair embedding
+        encoding = face_recognition.face_encodings(rgb_frame, face_locations)[0]
+        return face_locations[0], encoding
+    
+    return None, None
+
 def authenticate_user(username, saved_embeddings, threshold=0.5, num_frames=10, show_preview=True):
     """
     Tenta autenticar o usuário capturando alguns frames da webcam.

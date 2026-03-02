@@ -71,3 +71,12 @@ def list_users():
     if not os.path.exists(BASE_DIR):
         return []
     return [d for d in os.listdir(BASE_DIR) if os.path.isdir(os.path.join(BASE_DIR, d))]
+
+def delete_user(username):
+    """Remove a pasta do usuário e todos os seus dados."""
+    import shutil
+    user_dir = get_user_path(username)
+    if os.path.exists(user_dir):
+        shutil.rmtree(user_dir)
+        return True
+    return False
