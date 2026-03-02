@@ -3,8 +3,15 @@ import json
 import numpy as np
 from datetime import datetime
 
-# Definir local base para desenvolvimento (pode ser alterado para /var/lib na Fase 2)
-BASE_DIR = os.path.join(os.getcwd(), "data", "faces")
+# Caminhos padrão
+SYSTEM_DIR = "/var/lib/faceunlock"
+LOCAL_DIR = os.path.join(os.getcwd(), "data", "faces")
+
+# Escolher o diretório base (prioriza o de sistema se existir)
+if os.path.exists(SYSTEM_DIR) and os.access(SYSTEM_DIR, os.W_OK):
+    BASE_DIR = SYSTEM_DIR
+else:
+    BASE_DIR = LOCAL_DIR
 
 def get_user_path(username):
     """Retorna o caminho da pasta do usuário."""

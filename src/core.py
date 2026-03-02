@@ -64,11 +64,12 @@ def capture_embeddings(username, num_frames=30):
     print("\n")
     return embeddings
 
-def authenticate_user(username, saved_embeddings, threshold=0.5, num_frames=10):
+def authenticate_user(username, saved_embeddings, threshold=0.5, num_frames=10, show_preview=True):
     """
     Tenta autenticar o usuário capturando alguns frames da webcam.
     saved_embeddings: lista de vetores salvos no cadastro.
     threshold: distância máxima para considerar um match (menor é mais rigoroso).
+    show_preview: Se False, não abre janelas do OpenCV (modo PAM).
     """
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
@@ -78,7 +79,8 @@ def authenticate_user(username, saved_embeddings, threshold=0.5, num_frames=10):
     matches_found = 0
     frames_processed = 0
     
-    print(f"Iniciando autenticação para: {username}...")
+    if show_preview:
+        print(f"Iniciando autenticação para: {username}...")
 
     while frames_processed < num_frames:
         ret, frame = cap.read()
@@ -107,22 +109,26 @@ def authenticate_user(username, saved_embeddings, threshold=0.5, num_frames=10):
             else:
                 color = (0, 0, 255) # Vermelho para falha
                 
-            print(f"Processando: {frames_processed+1}/{num_frames} | Distância: {min_dist:.4f}", end="\r")
-            
-            # Desenhar na tela (preview opcional)
-            top, right, bottom, left = face_locations[0]
-            cv2.rectangle(frame, (left, top), (right, bottom), color, 2)
+            if show_preview:
+                print(f"Processando: {frames_processed+1}/{num_frames} | Distância: {min_dist:.4f}", end="\r")
+                # Desenhar na tela
+                top, right, bottom, left = face_locations[0]
+                cv2.rectangle(frame, (left, top), (right, bottom), color, 2)
         else:
-            print("Aviso: Olhe para a câmera.", end="\r")
+            if show_preview:
+                print("Aviso: Olhe para a câmera.", end="\r")
 
         frames_processed += 1
-        cv2.imshow('Face Unlock - Autenticacao', frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+        
+        if show_preview:
+            cv2.imshow('Face Unlock - Autenticacao', frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
 
     cap.release()
-    cv2.destroyAllWindows()
-    print("\n")
+    if show_preview:
+        cv2.destroyAllWindows()
+        print("\n")
 
     # Critério simples: se pelo menos 50% dos frames capturados com rosto deram match
     success_rate = (matches_found / frames_processed) if frames_processed > 0 else 0

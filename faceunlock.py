@@ -21,13 +21,41 @@ def main():
     auth_parser = subparsers.add_parser("auth", help="Autentica um usuário cadastrado")
     auth_parser.add_argument("--user", required=True, help="Nome do usuário para autenticar")
     auth_parser.add_argument("--threshold", type=float, default=0.5, help="Distância máxima de tolerância (padrão 0.5)")
+    auth_parser.add_argument("--no-gui", action="store_true", help="Executa sem abrir janela de vídeo (modo PAM)")
 
     # Comando List (Listar Usuários)
     list_parser = subparsers.add_parser("list", help="Lista usuários cadastrados")
 
+    # Comando Init (Configuração de Sistema)
+    init_parser = subparsers.add_parser("init", help="Configura diretórios de sistema (requer root)")
+
     args = parser.parse_args()
 
-    if args.command == "enrol":
+    if args.command == "init":
+        SYSTEM_DIR = "/var/lib/faceunlock"
+        print(f"Configurando diretório de sistema em {SYSTEM_DIR}...")
+        
+        try:
+            # Tentar criar o diretório
+            if not os.path.exists(SYSTEM_DIR):
+                os.makedirs(SYSTEM_DIR, mode=0o700, exist_ok=True)
+                print(f"Diretório {SYSTEM_DIR} criado com sucesso.")
+            
+            # Garantir permissões restritas (apenas root)
+            os.chmod(SYSTEM_DIR, 0o700)
+            print("Permissões 0700 (apenas root) aplicadas.")
+            
+            print("\nPronto! Agora o sistema usará /var/lib/faceunlock por padrão.")
+            sys.exit(0)
+            
+        except PermissionError:
+            print("\nErro de Permissão: Rode este comando com sudo!")
+            sys.exit(1)
+        except Exception as e:
+            print(f"\nErro inesperado: {e}")
+            sys.exit(1)
+
+    elif args.command == "enrol":
         # Captura os embeddings
         embeddings = capture_embeddings(args.user, args.frames)
         
@@ -47,7 +75,12 @@ def main():
             sys.exit(1)
             
         # Executar a autenticação
-        is_authenticated = authenticate_user(args.user, saved_embeddings, threshold=args.threshold)
+        is_authenticated = authenticate_user(
+            args.user, 
+            saved_embeddings, 
+            threshold=args.threshold,
+            show_preview=not args.no_gui
+        )
         
         if is_authenticated:
             print(f"\n[OK] Bem-vindo, {args.user}! Autenticação bem sucedida.")
