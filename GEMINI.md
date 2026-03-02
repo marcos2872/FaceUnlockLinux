@@ -35,4 +35,5 @@ This document serves as the foundational guide for AI assistants working on the 
     - `refactor:`: Refactoring production code.
     - `test:`: Adding missing tests, refactoring tests; no production code change.
     - `chore:`: Updating build tasks, package manager configs, etc.; no production code change.
+- **Quality Control**: Always run `pre-commit run --all-files` (which includes `ruff` linting and formatting) before finalizing changes or committing.
 - **Language**: Commit descriptions should be concise and preferred in Portuguese, following the project's current trend.
