@@ -25,3 +25,14 @@ This document serves as the foundational guide for AI assistants working on the 
 - **Python**: Target Python 3.10+. Be mindful of compatibility with higher versions (e.g., the 3.14 patch in `install_deps.sh`).
 - **Imports**: Add `src` and `src/ui` to `sys.path` in entry points (`gui.py`, `faceunlock.py`) to maintain clean imports.
 - **Validation**: Every feature or bug fix must be accompanied by a validation step, ideally using the existing GUI or CLI test commands.
+
+## 📝 Git & Commit Standards
+- **Conventional Commits**: Adhere to the Conventional Commits specification for all commit messages.
+    - `feat:`: New features.
+    - `fix:`: Bug fixes.
+    - `docs:`: Documentation changes.
+    - `style:`: Formatting, missing semi-colons, etc.; no code changes.
+    - `refactor:`: Refactoring production code.
+    - `test:`: Adding missing tests, refactoring tests; no production code change.
+    - `chore:`: Updating build tasks, package manager configs, etc.; no production code change.
+- **Language**: Commit descriptions should be concise and preferred in Portuguese, following the project's current trend.
