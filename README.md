@@ -94,13 +94,14 @@ cd ~/.local/share/faceunlock
 ## 📁 Estrutura do Projeto
 
 - `faceunlock.py`: Ponto de entrada do CLI.
-- `gui.py`: Painel de controle desktop (PySide6).
+- `gui.py`: Ponto de entrada da Interface Gráfica (PySide6).
 - `src/`:
     - `core.py`: Lógica principal de reconhecimento facial.
     - `liveness.py`: Algoritmo de detecção de piscada.
     - `storage.py`: Gerenciamento de arquivos e vetores.
     - `system_integration.py`: Automação de arquivos PAM (`/etc/pam.d/`).
     - `logger.py`: Sistema de auditoria e histórico de acessos.
+    - `ui/`: Componentes modulares da interface gráfica (Aba de Faces, Testes e Configurações).
 - `NEXT_STEPS.md`: Guia para configurações avançadas manuais.
 
 ---
