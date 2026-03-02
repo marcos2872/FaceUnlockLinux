@@ -114,6 +114,8 @@ class FaceUnlockApp(QMainWindow):
         self.main_layout.addWidget(self.sidebar)
         self.main_layout.addWidget(self.right_container)
 
+        # Agora que tudo está inicializado, fazemos o carregamento inicial da lista
+        self.faces_tab.refresh_user_list()
         self.switch_page(0)
 
     def update_user_badge(self, username):
