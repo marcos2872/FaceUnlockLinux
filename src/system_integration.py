@@ -21,12 +21,20 @@ def get_pam_line(username):
 def check_integration(service_name, username):
     """Verifica se a integração existe no arquivo do PAM de forma flexível."""
     path = PAM_SERVICES.get(service_name)
-    if not path or not os.path.exists(path):
+    if not path:
+        return False
+
+    # Se não existe em /etc, tenta ler do original em /usr/lib
+    if not os.path.exists(path):
+        path = os.path.join("/usr/lib/pam.d", os.path.basename(path))
+
+    if not os.path.exists(path):
         return False
 
     # Busca por termos essenciais em vez da linha exata
     search_term = f"faceunlock.py auth --user {username}"
     try:
+
         with open(path) as f:
             for line in f:
                 if search_term in line and "pam_exec.so" in line:
@@ -43,10 +51,28 @@ def update_integration(service_name, username, enable=True):
     path = PAM_SERVICES.get(service_name)
     line = get_pam_line(username)
 
-    if not path or not os.path.exists(path):
-        return False, f"Serviço {service_name} não encontrado."
+    if not path:
+        return False, f"Serviço {service_name} não configurado."
+
+    # No Fedora, se o arquivo não existe em /etc/pam.d/, tentamos ler de /usr/lib/pam.d/
+    if not os.path.exists(path):
+        fallback_path = os.path.join("/usr/lib/pam.d", os.path.basename(path))
+        if os.path.exists(fallback_path):
+            try:
+                # Cria o diretório em /etc se necessário (raro)
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                # Lê o conteúdo do fallback para o novo arquivo em /etc
+                with open(fallback_path, "r") as f:
+                    content = f.read()
+                with open(path, "w") as f:
+                    f.write(content)
+            except PermissionError:
+                return False, "Erro de permissão ao criar arquivo em /etc/pam.d/. Execute como root."
+        else:
+            return False, f"Arquivo de serviço {service_name} não encontrado em /etc ou /usr/lib."
 
     try:
+
         with open(path) as f:
             lines = f.readlines()
 
