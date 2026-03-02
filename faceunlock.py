@@ -8,6 +8,7 @@ sys.path.append(os.path.join(SCRIPT_DIR, 'src'))
 
 from core import capture_embeddings, authenticate_user
 from storage import save_user_data, load_user_data, list_users
+from logger import log_access
 
 def main():
     parser = argparse.ArgumentParser(description="Face Unlock - Sistema de Reconhecimento Facial")
@@ -35,53 +36,40 @@ def main():
     if args.command == "init":
         SYSTEM_DIR = "/var/lib/faceunlock"
         print(f"Configurando diretório de sistema em {SYSTEM_DIR}...")
-        
         try:
-            # Tentar criar o diretório
             if not os.path.exists(SYSTEM_DIR):
                 os.makedirs(SYSTEM_DIR, mode=0o700, exist_ok=True)
-                print(f"Diretório {SYSTEM_DIR} criado com sucesso.")
-            
-            # Garantir permissões restritas (apenas root)
             os.chmod(SYSTEM_DIR, 0o700)
-            print("Permissões 0700 (apenas root) aplicadas.")
-            
-            print("\nPronto! Agora o sistema usará /var/lib/faceunlock por padrão.")
+            print("Sucesso! Diretório de sistema pronto.")
             sys.exit(0)
-            
-        except PermissionError:
-            print("\nErro de Permissão: Rode este comando com sudo!")
-            sys.exit(1)
         except Exception as e:
-            print(f"\nErro inesperado: {e}")
+            print(f"Erro: {e}")
             sys.exit(1)
 
     elif args.command == "enrol":
-        # Captura os embeddings
         embeddings = capture_embeddings(args.user, args.frames)
-        
         if embeddings and len(embeddings) > 0:
-            print(f"Salvando {len(embeddings)} embeddings para '{args.user}'...")
             save_user_data(args.user, embeddings)
             print("Cadastro finalizado com sucesso!")
         else:
             print("Erro: Nenhum dado capturado.")
 
     elif args.command == "auth":
-        # Carregar dados do usuário
         saved_embeddings, metadata = load_user_data(args.user)
-        
         if saved_embeddings is None:
-            print(f"Erro: Usuário '{args.user}' não encontrado. Use o comando 'enrol' primeiro.")
+            print(f"Erro: Usuário '{args.user}' não encontrado.")
             sys.exit(1)
             
-        # Executar a autenticação
         is_authenticated = authenticate_user(
             args.user, 
             saved_embeddings, 
             threshold=args.threshold,
             show_preview=not args.no_gui
         )
+        
+        # Logar o acesso (essencial para o PAM)
+        access_type = "PAM (No-GUI)" if args.no_gui else "Manual CLI"
+        log_access(args.user, is_authenticated, f"{access_type} | Threshold: {args.threshold}")
         
         if is_authenticated:
             print(f"\n[OK] Bem-vindo, {args.user}! Autenticação bem sucedida.")
@@ -94,11 +82,9 @@ def main():
         users = list_users()
         if users:
             print("Usuários cadastrados:")
-            for user in users:
-                print(f" - {user}")
+            for user in users: print(f" - {user}")
         else:
             print("Nenhum usuário cadastrado.")
-
     else:
         parser.print_help()
 
