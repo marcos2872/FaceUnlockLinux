@@ -182,10 +182,23 @@ class FacesTab(QWidget):
         users = list_users()
         if users:
             self.user_list.addItems(users)
+            # Auto-selecionar o primeiro usuário
+            self.user_list.setCurrentRow(0)
+            self.on_user_selected(self.user_list.currentItem())
         else:
             self.user_list.addItem("Nenhum usuário cadastrado.")
+            if hasattr(self.main_app, "update_user_badge"):
+                self.main_app.update_user_badge(None)
 
     def on_user_selected(self, item):
+        if not item or item.text() == "Nenhum usuário cadastrado.":
+            return
+
+        username = item.text()
+        # Atualizar Badge Global
+        if hasattr(self.main_app, "update_user_badge"):
+            self.main_app.update_user_badge(username)
+
         if hasattr(self.main_app, "update_integration_checks"):
             self.main_app.update_integration_checks()
 

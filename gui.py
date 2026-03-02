@@ -68,6 +68,35 @@ class FaceUnlockApp(QMainWindow):
         self.sidebar_layout.addStretch()
 
         # 2. Área de Conteúdo
+        self.right_container = QWidget()
+        self.right_layout = QVBoxLayout(self.right_container)
+        self.right_layout.setContentsMargins(0, 0, 0, 0)
+        self.right_layout.setSpacing(0)
+
+        # Barra de Status Superior (Badge de Usuário)
+        self.user_header = QWidget()
+        self.user_header.setFixedHeight(50)
+        self.user_header.setStyleSheet(
+            "background-color: #2a2e32; border-bottom: 1px solid #4d5052;"
+        )
+        header_layout = QHBoxLayout(self.user_header)
+        header_layout.setContentsMargins(30, 0, 30, 0)
+
+        self.user_badge = QLabel("Nenhum usuário")
+        self.user_badge.setStyleSheet("""
+            QLabel {
+                background-color: #3daee9;
+                color: white;
+                padding: 4px 12px;
+                border-radius: 10px;
+                font-weight: bold;
+                font-size: 11px;
+            }
+        """)
+        header_layout.addStretch()
+        header_layout.addWidget(QLabel("Usuário Ativo:"))
+        header_layout.addWidget(self.user_badge)
+
         self.content_area = QStackedWidget()
         self.content_area.setObjectName("content_area")
 
@@ -79,10 +108,27 @@ class FaceUnlockApp(QMainWindow):
         self.content_area.addWidget(self.test_tab)
         self.content_area.addWidget(self.settings_tab)
 
+        self.right_layout.addWidget(self.user_header)
+        self.right_layout.addWidget(self.content_area)
+
         self.main_layout.addWidget(self.sidebar)
-        self.main_layout.addWidget(self.content_area)
+        self.main_layout.addWidget(self.right_container)
 
         self.switch_page(0)
+
+    def update_user_badge(self, username):
+        if username:
+            self.user_badge.setText(username.upper())
+            self.user_badge.setStyleSheet(
+                "background-color: #3daee9; color: white; padding: 4px 12px; "
+                "border-radius: 10px; font-weight: bold;"
+            )
+        else:
+            self.user_badge.setText("NENHUM")
+            self.user_badge.setStyleSheet(
+                "background-color: #4d5052; color: #bdc3c7; padding: 4px 12px; "
+                "border-radius: 10px; font-weight: bold;"
+            )
 
     def create_nav_btn(self, text, icon_name, index):
         btn = QPushButton()
