@@ -24,7 +24,7 @@ class AuthenticationDialog(QDialog):
         self.setFixedSize(660, 600)
         layout = QVBoxLayout()
         self.status_label = QLabel("Aguardando detecção...")
-        self.status_label.setStyleSheet("font-size: 16px; font-weight: bold; color: blue;")
+        self.status_label.setStyleSheet("font-size: 16px; font-weight: bold; color: #3498db;")
         self.status_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.status_label)
         self.video_label = QLabel()

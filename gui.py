@@ -45,6 +45,63 @@ class FaceUnlockApp(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+
+    # --- Aplicação de Tema Escuro Global ---
+    app.setStyle("Fusion")  # Fusion é o estilo mais consistente entre temas
+    dark_stylesheet = """
+        QMainWindow, QDialog {
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+        QTabWidget::pane {
+            border: 1px solid #333;
+            background-color: #1e1e1e;
+        }
+        QTabBar::tab {
+            background-color: #252525;
+            color: #b0b0b0;
+            padding: 10px 20px;
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+        }
+        QTabBar::tab:selected {
+            background-color: #1e1e1e;
+            color: #ffffff;
+            border-bottom: 2px solid #3498db;
+        }
+        QPushButton {
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        QPushButton:hover {
+            background-color: #34495e;
+        }
+        QPushButton:pressed {
+            background-color: #1a252f;
+        }
+        QLineEdit, QDoubleSpinBox, QListWidget, QTextEdit {
+            background-color: #252525;
+            color: #e0e0e0;
+            border: 1px solid #333;
+            border-radius: 3px;
+            padding: 5px;
+        }
+        QCheckBox {
+            color: #e0e0e0;
+        }
+        QLabel {
+            color: #e0e0e0;
+        }
+        h2 {
+            color: #3498db;
+        }
+    """
+    app.setStyleSheet(dark_stylesheet)
+
     app.setWindowIcon(QIcon(os.path.join(SCRIPT_DIR, "images/icon.png")))
     window = FaceUnlockApp()
     window.show()
