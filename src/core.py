@@ -9,13 +9,43 @@ sys.path.append(SCRIPT_DIR)
 from liveness import check_blink  # noqa: E402
 
 
+def enhance_frame(frame):
+    """
+    Melhora o contraste e reduz ruído do frame para ambientes de baixa luminosidade.
+    Usa CLAHE para equalização adaptativa.
+    """
+    # Converter para o espaço de cor LAB para trabalhar apenas na luminância (L)
+    lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
+    l_channel, a, b = cv2.split(lab)
+
+    # Aplicar CLAHE (Contrast Limited Adaptive Histogram Equalization)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    cl = clahe.apply(l_channel)
+
+    # Mesclar de volta e converter para BGR
+    limg = cv2.merge((cl, a, b))
+    enhanced_bgr = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
+
+    # Redução de ruído leve (Filtro Gaussiano para suavizar granulado de baixa luz)
+    # sem perder as bordas principais do rosto
+    return cv2.GaussianBlur(enhanced_bgr, (3, 3), 0)
+
+
 def process_face_frame(frame):
     """
     Processa um único frame para detectar rostos e landmarks.
     Retorna: (face_location, face_encoding, face_landmarks) ou (None, None, None)
     """
-    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    # Aplicar melhoria de imagem antes da detecção
+    enhanced = enhance_frame(frame)
+    rgb_frame = cv2.cvtColor(enhanced, cv2.COLOR_BGR2RGB)
+
+    # Tenta detecção normal
     face_locations = face_recognition.face_locations(rgb_frame)
+
+    if not face_locations:
+        # Se falhar, tenta com upsample (melhor para rostos distantes ou escuros)
+        face_locations = face_recognition.face_locations(rgb_frame, number_of_times_to_upsample=1)
 
     if not face_locations:
         return None, None, None
