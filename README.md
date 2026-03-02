@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="images/logo.png" alt="Face Unlock Logo" width="600">
+</p>
+
 # Face Unlock para Linux (Fedora KDE) 🚀
 
 O **Face Unlock** é um sistema de autenticação facial robusto escrito em Python, projetado especificamente para distros Linux (focado em Fedora KDE). Ele permite que você use sua webcam para autenticar o comando `sudo`, desbloquear a tela e fazer login no sistema.
