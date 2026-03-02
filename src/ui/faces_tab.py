@@ -148,7 +148,6 @@ class FacesTab(QWidget):
         card_layout.addWidget(QLabel("Usuários com acesso biométrico configurado:"))
 
         self.user_list = QListWidget()
-        self.refresh_user_list()
         self.user_list.itemClicked.connect(self.on_user_selected)
         card_layout.addWidget(self.user_list)
 
@@ -199,8 +198,10 @@ class FacesTab(QWidget):
         if hasattr(self.main_app, "update_user_badge"):
             self.main_app.update_user_badge(username)
 
-        if hasattr(self.main_app, "update_integration_checks"):
-            self.main_app.update_integration_checks()
+        # Só tenta atualizar se a aba de configurações já existir
+        if hasattr(self.main_app, "settings_tab"):
+            if hasattr(self.main_app, "update_integration_checks"):
+                self.main_app.update_integration_checks()
 
     def on_add_user(self):
         username, ok = QInputDialog.getText(self, "Novo Cadastro", "Nome do usuário:")
