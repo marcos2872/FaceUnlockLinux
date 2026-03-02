@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
     QDialog,
     QDoubleSpinBox,
     QFormLayout,
+    QFrame,
     QLabel,
     QMessageBox,
     QPushButton,
@@ -35,15 +36,16 @@ class LogDialog(QDialog):
         self.text_area.setStyleSheet("""
             QTextEdit {
                 font-family: 'JetBrains Mono', 'Fira Code', monospace; 
-                background-color: #1E1E1E; 
-                color: #30D158;
-                border-radius: 10px;
-                padding: 10px;
+                background-color: #1b1e20; 
+                color: #27ae60;
+                border: 1px solid #4d5052;
+                border-radius: 2px;
             }
         """)
         layout.addWidget(self.text_area)
 
         btn_close = QPushButton("Fechar")
+        btn_close.setObjectName("action_btn")
         btn_close.setCursor(Qt.PointingHandCursor)
         btn_close.clicked.connect(self.close)
         layout.addWidget(btn_close)
@@ -63,77 +65,78 @@ class SettingsTab(QWidget):
         self.main_app = parent
 
         layout = QVBoxLayout()
-        layout.setContentsMargins(40, 40, 40, 40)
-        layout.setSpacing(25)
+        layout.setContentsMargins(30, 30, 30, 30)
+        layout.setSpacing(20)
 
-        header = QLabel("Integração & Sistema")
-        header.setStyleSheet("font-size: 28px; font-weight: bold; color: white;")
+        header = QLabel("Configuração de Sistema")
+        header.setStyleSheet("font-size: 20px; font-weight: bold; color: #eff0f1;")
         layout.addWidget(header)
 
-        # --- CARD 1: INTEGRAÇÃO PAM ---
-        card_pam = QWidget()
-        card_pam.setStyleSheet("background-color: #282828; border-radius: 15px;")
-        pam_layout = QVBoxLayout(card_pam)
+        # --- SEÇÃO 1: PAM ---
+        self.card_pam = QFrame()
+        self.card_pam.setObjectName("section_card")
+        pam_layout = QVBoxLayout(self.card_pam)
         pam_layout.setContentsMargins(20, 20, 20, 20)
-        pam_layout.setSpacing(15)
+        pam_layout.setSpacing(12)
 
-        self.selected_user_label = QLabel("Selecione um usuário para configurar")
-        self.selected_user_label.setStyleSheet("color: #FF9F0A; font-weight: bold;")
+        pam_title = QLabel("Integração PAM / Polkit")
+        pam_title.setStyleSheet("font-weight: bold; color: #3daee9;")
+        pam_layout.addWidget(pam_title)
+
+        self.selected_user_label = QLabel("Aguardando seleção de usuário...")
+        self.selected_user_label.setStyleSheet("color: #fdbc4b;")
         pam_layout.addWidget(self.selected_user_label)
 
-        self.check_sudo = QCheckBox("Habilitar para 'Sudo' (Terminal)")
-        self.check_lock = QCheckBox("Habilitar para 'Lock Screen' (Bloqueio)")
-        self.check_login = QCheckBox("Habilitar para 'Login' (SDDM)")
-        self.check_polkit = QCheckBox("Habilitar para 'Ações de Admin' (Polkit)")
+        self.check_sudo = QCheckBox("Habilitar Face Unlock para comandos 'Sudo'")
+        self.check_lock = QCheckBox("Habilitar para Tela de Bloqueio (KDE Lock)")
+        self.check_login = QCheckBox("Habilitar para Login do Sistema (SDDM)")
+        self.check_polkit = QCheckBox("Habilitar para Ações Administrativas (Polkit)")
 
         pam_layout.addWidget(self.check_sudo)
         pam_layout.addWidget(self.check_lock)
         pam_layout.addWidget(self.check_login)
         pam_layout.addWidget(self.check_polkit)
 
-        self.btn_apply = QPushButton("Aplicar Configurações de Sistema")
+        self.btn_apply = QPushButton("Sincronizar com o Sistema")
+        self.btn_apply.setObjectName("primary_action")
         self.btn_apply.setCursor(Qt.PointingHandCursor)
-        self.btn_apply.setMinimumHeight(45)
-        self.btn_apply.setStyleSheet("background-color: #0A84FF; color: white; font-weight: bold;")
+        self.btn_apply.setMinimumHeight(40)
         self.btn_apply.clicked.connect(self.on_apply_integration)
         pam_layout.addWidget(self.btn_apply)
 
-        layout.addWidget(card_pam)
+        layout.addWidget(self.card_pam)
 
-        # --- CARD 2: SENSIBILIDADE ---
-        card_sens = QWidget()
-        card_sens.setStyleSheet("background-color: #282828; border-radius: 15px;")
-        sens_layout = QVBoxLayout(card_sens)
+        # --- SEÇÃO 2: SENSIBILIDADE ---
+        self.card_sens = QFrame()
+        self.card_sens.setObjectName("section_card")
+        sens_layout = QVBoxLayout(self.card_sens)
         sens_layout.setContentsMargins(20, 20, 20, 20)
 
-        sens_title = QLabel("Sensibilidade do Sensor")
-        sens_title.setStyleSheet("font-size: 16px; font-weight: bold; color: white;")
+        sens_title = QLabel("Calibragem do Sensor")
+        sens_title.setStyleSheet("font-weight: bold; color: #eff0f1;")
         sens_layout.addWidget(sens_title)
-
-        sens_desc = QLabel("Defina o quão rigoroso o reconhecimento deve ser.")
-        sens_desc.setStyleSheet("color: #8E8E93; margin-bottom: 10px;")
-        sens_layout.addWidget(sens_desc)
 
         form_layout = QFormLayout()
         self.spin_threshold = QDoubleSpinBox()
         self.spin_threshold.setRange(0.2, 0.8)
         self.spin_threshold.setSingleStep(0.01)
         self.spin_threshold.setValue(self.main_app.config["threshold"])
-        form_layout.addRow("Limiar (Threshold):", self.spin_threshold)
+        form_layout.addRow("Sensibilidade (Threshold):", self.spin_threshold)
         sens_layout.addLayout(form_layout)
 
-        btn_save = QPushButton("Salvar Preferências")
+        btn_save = QPushButton("Salvar Calibragem")
+        btn_save.setObjectName("action_btn")
         btn_save.setCursor(Qt.PointingHandCursor)
         btn_save.clicked.connect(self.on_save_settings)
         sens_layout.addWidget(btn_save)
 
-        layout.addWidget(card_sens)
+        layout.addWidget(self.card_sens)
 
-        # Botão de Logs (Estilo Secundário)
-        self.btn_logs = QPushButton("Ver Histórico de Acessos")
+        # Botão de Logs
+        self.btn_logs = QPushButton("Ver Auditoria de Acessos")
+        self.btn_logs.setObjectName("action_btn")
         self.btn_logs.setCursor(Qt.PointingHandCursor)
-        self.btn_logs.setMinimumHeight(40)
-        self.btn_logs.setStyleSheet("background-color: #3A3A3C; color: #A0A0A0;")
+        self.btn_logs.setFixedHeight(35)
         self.btn_logs.clicked.connect(self.on_view_logs)
         layout.addWidget(self.btn_logs)
 
@@ -147,7 +150,7 @@ class SettingsTab(QWidget):
     def update_integration_checks(self):
         username = self.main_app.get_selected_user()
         if not username:
-            self.selected_user_label.setText("⚠️ Selecione um usuário na aba lateral")
+            self.selected_user_label.setText("⚠️ Selecione um usuário na lista")
             for cb in [self.check_sudo, self.check_lock, self.check_login, self.check_polkit]:
                 cb.setChecked(False)
             return
@@ -164,7 +167,9 @@ class SettingsTab(QWidget):
             QMessageBox.warning(self, "Aviso", "Selecione um usuário primeiro.")
             return
         if (
-            QMessageBox.question(self, "Confirmar", f"Aplicar PAM para '{username}'?")
+            QMessageBox.question(
+                self, "Confirmar Alterações", f"Aplicar regras de sistema para '{username}'?"
+            )
             == QMessageBox.Yes
         ):
             services = {
@@ -175,9 +180,9 @@ class SettingsTab(QWidget):
             }
             for svc, enable in services.items():
                 update_integration(svc, username, enable)
-            QMessageBox.information(self, "Sucesso", "Integração atualizada!")
+            QMessageBox.information(self, "Sucesso", "Configurações sincronizadas!")
 
     def on_save_settings(self):
         self.main_app.config["threshold"] = self.spin_threshold.value()
         save_config(self.main_app.config)
-        QMessageBox.information(self, "Sucesso", "Preferências salvas!")
+        QMessageBox.information(self, "Sucesso", "Calibragem salva!")

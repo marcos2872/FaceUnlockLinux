@@ -30,44 +30,47 @@ class FaceUnlockApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.config = load_config()
-        self.setWindowTitle("Face Unlock")
+        self.setWindowTitle("Face Unlock - Configurações")
         self.setWindowIcon(QIcon(os.path.join(SCRIPT_DIR, "images/icon.png")))
-        self.resize(1000, 700)
+        self.resize(1100, 750)
 
-        # Widget Central e Layout Principal
+        # Widget Central
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         self.main_layout = QHBoxLayout(central_widget)
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.setSpacing(0)
 
-        # 1. Sidebar (Lateral)
+        # 1. Sidebar (KDE Breeze Style)
         self.sidebar = QWidget()
         self.sidebar.setObjectName("sidebar")
-        self.sidebar.setFixedWidth(220)
+        self.sidebar.setFixedWidth(260)
         self.sidebar_layout = QVBoxLayout(self.sidebar)
-        self.sidebar_layout.setContentsMargins(15, 30, 15, 20)
-        self.sidebar_layout.setSpacing(10)
+        self.sidebar_layout.setContentsMargins(0, 10, 0, 10)
+        self.sidebar_layout.setSpacing(2)
 
-        # Logo/Titulo na Sidebar
+        # Titulo da Sidebar
+        title_container = QWidget()
+        title_container.setFixedHeight(60)
+        title_layout = QHBoxLayout(title_container)
         title = QLabel("Face Unlock")
         title.setStyleSheet(
-            "font-size: 20px; font-weight: bold; margin-bottom: 20px; color: white;"
+            "font-size: 18px; font-weight: bold; color: #eff0f1; padding-left: 15px;"
         )
-        self.sidebar_layout.addWidget(title)
+        title_layout.addWidget(title)
+        self.sidebar_layout.addWidget(title_container)
 
-        # Botões da Sidebar
-        self.btn_faces = self.create_nav_btn("Usuários", 0)
-        self.btn_test = self.create_nav_btn("Teste de Câmera", 1)
-        self.btn_settings = self.create_nav_btn("Configurações", 2)
+        # Botões da Sidebar com Ícones do Sistema
+        self.btn_faces = self.create_nav_btn("Usuários", "user-identity", 0)
+        self.btn_test = self.create_nav_btn("Teste de Câmera", "camera-web", 1)
+        self.btn_settings = self.create_nav_btn("Integração & Sistema", "preferences-system", 2)
 
         self.sidebar_layout.addStretch()
 
-        # 2. Área de Conteúdo (Direita)
+        # 2. Área de Conteúdo
         self.content_area = QStackedWidget()
         self.content_area.setObjectName("content_area")
 
-        # Inicializar Componentes (Abas originais)
         self.faces_tab = FacesTab(SCRIPT_DIR, self)
         self.test_tab = TestTab(SCRIPT_DIR, self)
         self.settings_tab = SettingsTab(SCRIPT_DIR, self)
@@ -76,30 +79,41 @@ class FaceUnlockApp(QMainWindow):
         self.content_area.addWidget(self.test_tab)
         self.content_area.addWidget(self.settings_tab)
 
-        # Adicionar ao Layout Principal
         self.main_layout.addWidget(self.sidebar)
         self.main_layout.addWidget(self.content_area)
 
-        # Selecionar a primeira tela por padrão
         self.switch_page(0)
 
-    def create_nav_btn(self, text, index):
-        btn = QPushButton(text)
+    def create_nav_btn(self, text, icon_name, index):
+        btn = QPushButton()
         btn.setCheckable(True)
-        btn.setFixedHeight(40)
+        btn.setFixedHeight(45)
         btn.setCursor(Qt.PointingHandCursor)
+
+        # Layout interno para ícone + texto
+        layout = QHBoxLayout(btn)
+        layout.setContentsMargins(20, 0, 10, 0)
+        layout.setSpacing(12)
+
+        icon_label = QLabel()
+        icon_label.setPixmap(QIcon.fromTheme(icon_name).pixmap(22, 22))
+
+        text_label = QLabel(text)
+        text_label.setStyleSheet("font-size: 13px; background: transparent; color: inherit;")
+
+        layout.addWidget(icon_label)
+        layout.addWidget(text_label)
+        layout.addStretch()
+
         btn.clicked.connect(lambda: self.switch_page(index))
         self.sidebar_layout.addWidget(btn)
         return btn
 
     def switch_page(self, index):
         self.content_area.setCurrentIndex(index)
-
-        # Atualizar estado visual dos botões
         btns = [self.btn_faces, self.btn_test, self.btn_settings]
         for i, btn in enumerate(btns):
             btn.setChecked(i == index)
-            # No modo Sidebar, podemos usar classes dinâmicas para o estilo
             btn.setProperty("active", i == index)
             btn.style().unpolish(btn)
             btn.style().polish(btn)
@@ -115,93 +129,112 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
 
-    # --- Apple Crystal Dark Theme ---
-    apple_dark = """
+    # --- KDE Breeze Dark Theme ---
+    breeze_dark = """
         QMainWindow {
-            background-color: #1E1E1E;
+            background-color: #232629;
         }
         
         QWidget#sidebar {
-            background-color: #252525;
-            border-right: 1px solid #333;
+            background-color: #31363b;
+            border-right: 1px solid #4d5052;
         }
         
         QWidget#content_area {
-            background-color: #1E1E1E;
+            background-color: #232629;
         }
 
         QPushButton {
             background-color: transparent;
-            color: #B0B0B0;
-            border-radius: 8px;
+            color: #eff0f1;
+            border: none;
+            border-radius: 0px;
             text-align: left;
-            padding-left: 15px;
-            font-size: 14px;
-            font-weight: 500;
         }
         
         QPushButton:hover {
-            background-color: rgba(255, 255, 255, 0.05);
-            color: white;
+            background-color: #3daee9;
+            color: #ffffff;
         }
         
         QPushButton[active="true"] {
-            background-color: #0A84FF;
-            color: white;
+            background-color: #2a2e32;
+            border-left: 4px solid #3daee9;
+            color: #3daee9;
             font-weight: bold;
         }
 
-        /* Estilos para os Tabs internos (agora cards) */
         h2 {
-            color: white;
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 10px;
+            color: #eff0f1;
+            font-size: 22px;
+            font-weight: 500;
         }
         
         QLabel {
-            color: #A0A0A0;
+            color: #bdc3c7;
+        }
+
+        /* Frames para seções (estilo GroupBox) */
+        QFrame#section_card {
+            background-color: #31363b;
+            border: 1px solid #4d5052;
+            border-radius: 4px;
         }
 
         QListWidget {
-            background-color: #282828;
-            border: 1px solid #333;
-            border-radius: 12px;
-            padding: 5px;
-            color: white;
-            outline: none;
+            background-color: #232629;
+            border: 1px solid #4d5052;
+            border-radius: 2px;
+            color: #eff0f1;
         }
         
         QListWidget::item {
-            padding: 10px;
-            border-radius: 8px;
-        }
-        
-        QListWidget::item:selected {
-            background-color: #3A3A3C;
-            color: #0A84FF;
-        }
-
-        QDoubleSpinBox, QCheckBox, QTextEdit {
-            background-color: #282828;
-            border: 1px solid #333;
-            border-radius: 8px;
-            color: white;
             padding: 8px;
         }
         
-        QPushButton#action_btn { /* Para botões principais de ação */
-            background-color: #3A3A3C;
-            text-align: center;
-            padding: 10px;
+        QListWidget::item:selected {
+            background-color: #3daee9;
             color: white;
+        }
+
+        QDoubleSpinBox, QCheckBox, QTextEdit, QLineEdit {
+            background-color: #31363b;
+            border: 1px solid #4d5052;
+            border-radius: 3px;
+            color: #eff0f1;
+            padding: 6px;
+        }
+
+        QDoubleSpinBox:focus, QLineEdit:focus {
+            border: 1px solid #3daee9;
+        }
+
+        /* Botões de Ação estilo Breeze */
+        QPushButton#action_btn {
+            background-color: #31363b;
+            border: 1px solid #4d5052;
+            border-radius: 3px;
+            padding: 8px 16px;
+            color: #eff0f1;
         }
         
         QPushButton#action_btn:hover {
-            background-color: #48484A;
+            border: 1px solid #3daee9;
+            background-color: #31363b;
+        }
+
+        QPushButton#primary_action {
+            background-color: #3daee9;
+            border: 1px solid #3daee9;
+            color: white;
+            font-weight: bold;
+        }
+        
+        QPushButton#primary_action:hover {
+            background-color: #2980b9;
         }
     """
-    app.setStyleSheet(apple_dark)
+    app.setStyleSheet(breeze_dark)
     app.setWindowIcon(QIcon(os.path.join(SCRIPT_DIR, "images/icon.png")))
 
     window = FaceUnlockApp()

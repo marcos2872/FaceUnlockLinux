@@ -5,6 +5,7 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QIcon, QImage, QPixmap
 from PySide6.QtWidgets import (
     QDialog,
+    QFrame,
     QHBoxLayout,
     QInputDialog,
     QLabel,
@@ -26,38 +27,39 @@ class EnrollmentDialog(QDialog):
         super().__init__(parent)
         self.username = username
         self.script_dir = script_dir
-        self.setWindowTitle(f"Cadastrando: {username}")
+        self.setWindowTitle(f"Cadastrar Rosto - {username}")
         self.setWindowIcon(QIcon(os.path.join(script_dir, "images", "icon.png")))
         self.setFixedSize(660, 620)
 
         layout = QVBoxLayout()
-        layout.setContentsMargins(30, 30, 30, 30)
-        layout.setSpacing(20)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(15)
 
-        self.status_label = QLabel("Olhe para a câmera e PISQUE...")
-        self.status_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #0A84FF;")
+        self.status_label = QLabel("Posicione-se em frente à câmera e pisque os olhos")
+        self.status_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #3daee9;")
         self.status_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.status_label)
 
+        self.video_frame = QFrame()
+        self.video_frame.setObjectName("section_card")
+        self.video_frame.setFixedSize(620, 470)
+        video_layout = QVBoxLayout(self.video_frame)
+
         self.video_label = QLabel()
         self.video_label.setFixedSize(600, 450)
-        # Borda arredondada para o feed da câmera
-        self.video_label.setStyleSheet("""
-            border: 2px solid #333; 
-            border-radius: 20px; 
-            background-color: black;
-        """)
+        self.video_label.setStyleSheet("background-color: #000; border-radius: 2px;")
         self.video_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(self.video_label)
+        video_layout.addWidget(self.video_label)
+        layout.addWidget(self.video_frame)
 
         self.progress = QProgressBar()
         self.progress.setRange(0, 30)
-        self.progress.setFixedHeight(6)
+        self.progress.setFixedHeight(8)
         self.progress.setTextVisible(False)
         layout.addWidget(self.progress)
 
-        self.blink_status = QLabel("Vivacidade: ❌")
-        self.blink_status.setStyleSheet("font-weight: 600; color: #FF453A;")
+        self.blink_status = QLabel("Detecção de Vivacidade: Pendente")
+        self.blink_status.setStyleSheet("color: #da4453;")  # Red Breeze
         self.blink_status.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.blink_status)
 
@@ -84,10 +86,10 @@ class EnrollmentDialog(QDialog):
             elif not is_blinking and self.eye_closed:
                 self.blinks += 1
                 self.eye_closed = False
-                self.blink_status.setText("Vivacidade: ✅")
-                self.blink_status.setStyleSheet("font-weight: 600; color: #30D158;")
+                self.blink_status.setText("Detecção de Vivacidade: OK")
+                self.blink_status.setStyleSheet("color: #27ae60;")  # Green Breeze
                 self.status_label.setStyleSheet(
-                    "font-size: 18px; font-weight: bold; color: #30D158;"
+                    "font-size: 14px; font-weight: bold; color: #27ae60;"
                 )
 
             if len(self.embeddings) < 30:
@@ -98,19 +100,14 @@ class EnrollmentDialog(QDialog):
                 self.finalize_enrolment()
 
             top, right, bottom, left = face_loc
-            color = (88, 209, 48) if self.blinks > 0 else (255, 69, 58)
+            color = (88, 209, 48) if self.blinks > 0 else (58, 174, 233)
             cv2.rectangle(frame, (left, top), (right, bottom), color, 2)
 
         rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         h, w, ch = rgb_image.shape
         q_img = QImage(rgb_image.data, w, h, ch * w, QImage.Format_RGB888)
-
-        # Converter para pixmap e aplicar arredondamento via código se necessário
-        # Aqui apenas setamos no label que já tem border-radius no stylesheet
         self.video_label.setPixmap(
-            QPixmap.fromImage(q_img).scaled(
-                600, 450, Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation
-            )
+            QPixmap.fromImage(q_img).scaled(600, 450, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         )
 
     def finalize_enrolment(self):
@@ -134,27 +131,21 @@ class FacesTab(QWidget):
         self.main_app = parent
 
         layout = QVBoxLayout()
-        layout.setContentsMargins(40, 40, 40, 40)
-        layout.setSpacing(25)
+        layout.setContentsMargins(30, 30, 30, 30)
+        layout.setSpacing(20)
 
-        header = QLabel("Gerenciar Usuários")
-        header.setObjectName("header")
-        header.setStyleSheet("font-size: 28px; font-weight: bold; color: white;")
+        header = QLabel("Gerenciamento de Usuários")
+        header.setStyleSheet("font-size: 20px; font-weight: bold; color: #eff0f1;")
         layout.addWidget(header)
 
-        # Card de Conteúdo
-        self.card = QWidget()
-        self.card.setStyleSheet("""
-            QWidget {
-                background-color: #282828;
-                border-radius: 15px;
-            }
-        """)
+        # Card de Conteúdo estilo Breeze
+        self.card = QFrame()
+        self.card.setObjectName("section_card")
         card_layout = QVBoxLayout(self.card)
         card_layout.setContentsMargins(20, 20, 20, 20)
         card_layout.setSpacing(15)
 
-        card_layout.addWidget(QLabel("Lista de Acesso"))
+        card_layout.addWidget(QLabel("Usuários com acesso biométrico configurado:"))
 
         self.user_list = QListWidget()
         self.refresh_user_list()
@@ -164,20 +155,19 @@ class FacesTab(QWidget):
         btn_layout = QHBoxLayout()
         btn_layout.setSpacing(10)
 
-        self.btn_add = QPushButton("Adicionar Rosto")
-        self.btn_add.setObjectName("action_btn")
+        self.btn_add = QPushButton("Novo Cadastro")
+        self.btn_add.setObjectName("primary_action")
         self.btn_add.setCursor(Qt.PointingHandCursor)
-        self.btn_add.setStyleSheet(
-            "background-color: #0A84FF; color: white; padding: 12px; font-weight: bold;"
-        )
+        self.btn_add.setFixedHeight(35)
 
-        self.btn_remove = QPushButton("Remover Selecionado")
+        self.btn_remove = QPushButton("Remover Usuário")
         self.btn_remove.setObjectName("action_btn")
         self.btn_remove.setCursor(Qt.PointingHandCursor)
-        self.btn_remove.setStyleSheet("background-color: #3A3A3C; color: #FF453A; padding: 12px;")
+        self.btn_remove.setFixedHeight(35)
 
         btn_layout.addWidget(self.btn_add)
         btn_layout.addWidget(self.btn_remove)
+        btn_layout.addStretch()
         card_layout.addLayout(btn_layout)
 
         layout.addWidget(self.card)
@@ -200,12 +190,12 @@ class FacesTab(QWidget):
             self.main_app.update_integration_checks()
 
     def on_add_user(self):
-        username, ok = QInputDialog.getText(self, "Novo Usuário", "Digite o nome para o cadastro:")
+        username, ok = QInputDialog.getText(self, "Novo Cadastro", "Nome do usuário:")
         if ok and username:
             dialog = EnrollmentDialog(username, self.script_dir, self)
             if dialog.exec():
                 QMessageBox.information(
-                    self, "Sucesso", f"Usuário '{username}' cadastrado com sucesso!"
+                    self, "Sucesso", f"Biometria para '{username}' configurada!"
                 )
                 self.refresh_user_list()
 
@@ -214,7 +204,9 @@ class FacesTab(QWidget):
         if not item or item.text() == "Nenhum usuário cadastrado.":
             return
         if (
-            QMessageBox.question(self, "Confirmação", f"Deseja remover '{item.text()}'?")
+            QMessageBox.question(
+                self, "Confirmar Remoção", f"Deseja remover a biometria de '{item.text()}'?"
+            )
             == QMessageBox.Yes
         ):
             if delete_user(item.text()):
