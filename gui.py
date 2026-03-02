@@ -5,7 +5,7 @@ import numpy as np
 from PySide6.QtWidgets import (QApplication, QMainWindow, QTabWidget, 
                              QWidget, QVBoxLayout, QLabel, QPushButton,
                              QListWidget, QHBoxLayout, QMessageBox, QInputDialog,
-                             QDialog, QProgressBar)
+                             QDialog, QProgressBar, QDoubleSpinBox, QFormLayout, QCheckBox)
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QImage, QPixmap
 
@@ -13,8 +13,10 @@ from PySide6.QtGui import QImage, QPixmap
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(SCRIPT_DIR, 'src'))
 
-from storage import list_users, delete_user, save_user_data, load_user_data
+from storage import list_users, delete_user, save_user_data, load_user_data, BASE_DIR
 from core import process_face_frame
+from config import load_config, save_config
+from system_integration import check_integration, update_integration
 import face_recognition
 
 class EnrollmentDialog(QDialog):
@@ -110,16 +112,15 @@ class AuthenticationDialog(QDialog):
         face_loc, current_encoding = process_face_frame(frame)
         
         if face_loc is not None:
-            # Calcular distância
             distances = face_recognition.face_distance(self.saved_embeddings, current_encoding)
             min_dist = min(distances) if len(distances) > 0 else 1.0
             
             if min_dist <= self.threshold:
-                color = (0, 255, 0) # Verde
+                color = (0, 255, 0)
                 self.status_label.setText(f"SUCESSO! (Distância: {min_dist:.4f})")
                 self.status_label.setStyleSheet("color: green; font-weight: bold; font-size: 16px;")
             else:
-                color = (0, 0, 255) # Vermelho
+                color = (0, 0, 255)
                 self.status_label.setText(f"NÃO RECONHECIDO (Distância: {min_dist:.4f})")
                 self.status_label.setStyleSheet("color: red; font-weight: bold; font-size: 16px;")
             
@@ -142,19 +143,21 @@ class AuthenticationDialog(QDialog):
 class FaceUnlockApp(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.config = load_config()
         self.setWindowTitle("Face Unlock - Painel de Controle")
-        self.resize(800, 600)
+        self.resize(800, 700)
         self.tabs = QTabWidget()
         self.setCentralWidget(self.tabs)
         self.tabs.addTab(self.create_faces_tab(), "Gerenciar Faces")
         self.tabs.addTab(self.create_test_tab(), "Testar Desbloqueio")
-        self.tabs.addTab(self.create_settings_tab(), "Configurações")
+        self.tabs.addTab(self.create_settings_tab(), "Integração & Sistema")
 
     def create_faces_tab(self):
         widget = QWidget(); layout = QVBoxLayout()
         layout.addWidget(QLabel("<h2>Usuários Cadastrados</h2>"))
         self.user_list = QListWidget()
         self.refresh_user_list()
+        self.user_list.itemClicked.connect(self.on_user_selected)
         layout.addWidget(self.user_list)
         btn_layout = QHBoxLayout()
         btn_add = QPushButton("Cadastrar Novo Rosto")
@@ -164,6 +167,9 @@ class FaceUnlockApp(QMainWindow):
         btn_layout.addWidget(btn_add); btn_layout.addWidget(btn_remove)
         layout.addLayout(btn_layout); widget.setLayout(layout)
         return widget
+
+    def on_user_selected(self, item):
+        self.update_integration_checks()
 
     def on_add_user(self):
         username, ok = QInputDialog.getText(self, "Novo Usuário", "Digite o nome para o cadastro:")
@@ -201,15 +207,106 @@ class FaceUnlockApp(QMainWindow):
         username = item.text()
         embeddings, meta = load_user_data(username)
         if embeddings is not None:
-            dialog = AuthenticationDialog(username, embeddings, parent=self)
+            dialog = AuthenticationDialog(username, embeddings, threshold=self.config["threshold"], parent=self)
             dialog.exec()
 
     def create_settings_tab(self):
         widget = QWidget(); layout = QVBoxLayout()
-        layout.addWidget(QLabel("<h2>Configurações do Sistema</h2>"))
-        layout.addWidget(QLabel("Sensibilidade (Threshold):"))
+        layout.addWidget(QLabel("<h2>Integração com o Sistema</h2>"))
+        
+        self.selected_user_label = QLabel("<b>Usuário Selecionado:</b> (Selecione na primeira aba)")
+        self.selected_user_label.setStyleSheet("color: #e67e22; font-size: 14px;")
+        layout.addWidget(self.selected_user_label)
+        
+        layout.addWidget(QLabel("Selecione onde o Face Unlock deve ser ativado:"))
+        self.check_sudo = QCheckBox("Habilitar para 'Sudo' (Terminal)")
+        self.check_lock = QCheckBox("Habilitar para 'Lock Screen' (Bloqueio de Tela)")
+        self.check_login = QCheckBox("Habilitar para 'Login' (SDDM)")
+        
+        layout.addWidget(self.check_sudo)
+        layout.addWidget(self.check_lock)
+        layout.addWidget(self.check_login)
+        
+        btn_apply_pam = QPushButton("Aplicar Integração de Sistema (Requer Root)")
+        btn_apply_pam.setStyleSheet("background-color: #3498db; color: white; font-weight: bold; min-height: 40px;")
+        btn_apply_pam.clicked.connect(self.on_apply_integration)
+        layout.addWidget(btn_apply_pam)
+        
+        layout.addWidget(QLabel("<hr>"))
+        layout.addWidget(QLabel("<h2>Sensibilidade do Sensor</h2>"))
+        
+        form_layout = QFormLayout()
+        self.spin_threshold = QDoubleSpinBox()
+        self.spin_threshold.setRange(0.2, 0.8)
+        self.spin_threshold.setSingleStep(0.01)
+        self.spin_threshold.setValue(self.config["threshold"])
+        form_layout.addRow("Valor Threshold:", self.spin_threshold)
+        layout.addLayout(form_layout)
+        
+        legend = QLabel(
+            "<b>Legenda da Sensibilidade:</b><br>"
+            "🔹 <b>0.40 ou menor:</b> Máxima Segurança (Rigoroso, evita sósias).<br>"
+            "🔸 <b>0.50 (Padrão):</b> Equilíbrio ideal entre segurança e velocidade.<br>"
+            "🔹 <b>0.60 ou maior:</b> Mais Flexível (Rápido, mas menos seguro)."
+        )
+        legend.setStyleSheet("background-color: #f8f9fa; padding: 10px; border-radius: 5px; color: #333;")
+        layout.addWidget(legend)
+        
+        btn_save_config = QPushButton("Salvar Configurações de Sensibilidade")
+        btn_save_config.clicked.connect(self.on_save_settings)
+        layout.addWidget(btn_save_config)
+        
+        layout.addWidget(QLabel(f"<b>Diretório de Dados:</b> {BASE_DIR}"))
         layout.addStretch(); widget.setLayout(layout)
+        
+        self.update_integration_checks()
         return widget
+
+    def update_integration_checks(self):
+        item = self.user_list.currentItem()
+        if not item or item.text() == "Nenhum usuário cadastrado.":
+            self.selected_user_label.setText("<b>Usuário Selecionado:</b> (Selecione na aba 'Gerenciar Faces')")
+            return
+        
+        username = item.text()
+        self.selected_user_label.setText(f"<b>Configurando para:</b> {username}")
+        self.check_sudo.setChecked(check_integration("sudo", username) == True)
+        self.check_lock.setChecked(check_integration("lockscreen", username) == True)
+        self.check_login.setChecked(check_integration("login", username) == True)
+
+    def on_apply_integration(self):
+        item = self.user_list.currentItem()
+        if not item or item.text() == "Nenhum usuário cadastrado.":
+            QMessageBox.warning(self, "Aviso", "Selecione um usuário para configurar a integração.")
+            return
+        
+        username = item.text()
+        msg = (f"Deseja aplicar as configurações de PAM para o usuário <b>'{username}'</b>?\n\n"
+               "Os arquivos em /etc/pam.d/ serão atualizados.")
+        
+        if QMessageBox.question(self, "Confirmar Integração", msg, QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+            services = {
+                "sudo": self.check_sudo.isChecked(),
+                "lockscreen": self.check_lock.isChecked(),
+                "login": self.check_login.isChecked()
+            }
+            
+            errors = []
+            for svc, enable in services.items():
+                success, error = update_integration(svc, username, enable)
+                if not success:
+                    errors.append(f"{svc}: {error}")
+            
+            if errors:
+                QMessageBox.critical(self, "Erro", "Falha ao atualizar PAM:\n" + "\n".join(errors) +
+                                   "\n\nCertifique-se de estar rodando com sudo.")
+            else:
+                QMessageBox.information(self, "Sucesso", "Integração de sistema atualizada!")
+
+    def on_save_settings(self):
+        self.config["threshold"] = self.spin_threshold.value()
+        save_config(self.config)
+        QMessageBox.information(self, "Sucesso", "Configurações de sensibilidade salvas!")
 
     def refresh_user_list(self):
         self.user_list.clear()
