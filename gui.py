@@ -222,7 +222,13 @@ if __name__ == "__main__":
             color: #eff0f1;
             border: none;
             border-radius: 0px;
+            text-align: center;
+            padding: 8px 15px;
+        }
+        
+        QWidget#sidebar QPushButton {
             text-align: left;
+            padding-left: 20px;
         }
         
         QPushButton:hover {
