@@ -3,8 +3,8 @@ import sys
 
 # Importação pesada aqui, em um processo separado
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QCursor
-from PySide6.QtWidgets import QApplication, QLabel, QProgressBar, QVBoxLayout, QWidget
+from PySide6.QtGui import QCursor, QPixmap
+from PySide6.QtWidgets import QApplication, QHBoxLayout, QLabel, QProgressBar, QVBoxLayout, QWidget
 
 
 class FeedbackOverlay(QWidget):
@@ -19,38 +19,71 @@ class FeedbackOverlay(QWidget):
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setAttribute(Qt.WA_ShowWithoutActivating)
 
-        layout = QVBoxLayout()
-        self.status_label = QLabel(f"Face Unlock: Iniciando para {username}...")
-        self.status_label.setStyleSheet("""
-            color: white; font-size: 16px; font-weight: bold; 
-            background-color: rgba(44, 62, 80, 220);
-            padding: 12px; border-radius: 8px; border: 1px solid #34495e;
-        """)
-        self.status_label.setAlignment(Qt.AlignCenter)
+        # Layout Principal (Vertical para conter Texto+Ícone e Barra de Progresso)
+        main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(10, 10, 10, 10)
+        main_layout.setSpacing(5)
 
+        # Layout Superior (Horizontal para Ícone + Texto)
+        top_content_layout = QHBoxLayout()
+        top_content_layout.setSpacing(15)
+
+        # 1. Adicionar Ícone (face.jpg)
+        self.icon_label = QLabel()
+        script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        img_path = os.path.join(script_dir, "images", "face.jpg")
+
+        if os.path.exists(img_path):
+            pixmap = QPixmap(img_path)
+            # Redimensiona para um tamanho icon-like (ex: 40x40)
+            self.icon_label.setPixmap(
+                pixmap.scaled(45, 45, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            )
+
+        # 2. Texto de Status
+        self.status_label = QLabel(f"Face Unlock: {username}")
+        self.status_label.setStyleSheet("""
+            color: white; font-size: 15px; font-weight: bold; 
+        """)
+        self.status_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+
+        top_content_layout.addWidget(self.icon_label)
+        top_content_layout.addWidget(self.status_label)
+        top_content_layout.addStretch()
+
+        # Widget Container para o fundo escuro
+        self.container = QWidget()
+        self.container.setObjectName("container")
+        self.container.setStyleSheet("""
+            QWidget#container {
+                background-color: rgba(44, 62, 80, 230);
+                border-radius: 10px;
+                border: 1px solid #34495e;
+            }
+        """)
+        container_layout = QVBoxLayout(self.container)
+        container_layout.addLayout(top_content_layout)
+
+        # 3. Barra de Progresso
         self.progress = QProgressBar()
         self.progress.setFixedHeight(4)
         self.progress.setTextVisible(False)
         self.progress.setStyleSheet(
-            "QProgressBar { border: none; background: rgba(0,0,0,50); } "
-            "QProgressBar::chunk { background: #3498db; }"
+            "QProgressBar { border: none; background: rgba(0,0,0,50); border-radius: 2px; } "
+            "QProgressBar::chunk { background: #3498db; border-radius: 2px; }"
         )
+        container_layout.addWidget(self.progress)
 
-        layout.addWidget(self.status_label)
-        layout.addWidget(self.progress)
-        self.setLayout(layout)
+        main_layout.addWidget(self.container)
+        self.setLayout(main_layout)
 
         # --- Lógica de Posicionamento no Monitor Ativo ---
-        # 1. Pega o monitor onde o mouse está no momento
         cursor_pos = QCursor.pos()
         screen = QApplication.screenAt(cursor_pos) or QApplication.primaryScreen()
         screen_geo = screen.geometry()
 
-        width, height = 400, 80
-        # 2. Calcula o X para centralizar horizontalmente
-        # Somamos o screen_geo.x() para monitor correto
+        width, height = 420, 100
         x = screen_geo.x() + (screen_geo.width() - width) // 2
-        # 3. Define o Y (distância do topo do monitor)
         y = screen_geo.y() + 40
 
         self.setGeometry(x, y, width, height)
