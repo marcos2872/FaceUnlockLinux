@@ -122,14 +122,12 @@ class FaceUnlockApp(QMainWindow):
         if username:
             self.user_badge.setText(username.upper())
             self.user_badge.setStyleSheet(
-                "background-color: #3daee9; color: white; padding: 4px 12px; "
-                "border-radius: 10px; font-weight: bold;"
+                "color: #eff0f1; padding: 4px 0px; font-weight: bold; font-size: 13px;"
             )
         else:
             self.user_badge.setText("NENHUM")
             self.user_badge.setStyleSheet(
-                "background-color: #4d5052; color: #bdc3c7; padding: 4px 12px; "
-                "border-radius: 10px; font-weight: bold;"
+                "color: #7f8c8d; padding: 4px 0px; font-weight: bold; font-size: 13px;"
             )
 
     def create_nav_btn(self, text, icon_name, index):
@@ -201,25 +199,25 @@ if __name__ == "__main__":
         }
         
         QPushButton:hover {
-            background-color: #3daee9;
+            background-color: #454a4e;
             color: #ffffff;
         }
         
         QPushButton[active="true"] {
-            background-color: #2a2e32;
-            border-left: 4px solid #3daee9;
-            color: #3daee9;
+            background-color: #31363b;
+            border-left: 4px solid #7f8c8d;
+            color: #ffffff;
             font-weight: bold;
         }
 
         h2 {
-            color: #eff0f1;
+            color: #ffffff;
             font-size: 22px;
             font-weight: 500;
         }
         
         QLabel {
-            color: #bdc3c7;
+            color: #eff0f1;
         }
 
         /* Frames para seções (estilo GroupBox) */
@@ -241,7 +239,7 @@ if __name__ == "__main__":
         }
         
         QListWidget::item:selected {
-            background-color: #3daee9;
+            background-color: #454a4e;
             color: white;
         }
 
@@ -254,7 +252,7 @@ if __name__ == "__main__":
         }
 
         QDoubleSpinBox:focus, QLineEdit:focus {
-            border: 1px solid #3daee9;
+            border: 1px solid #7f8c8d;
         }
 
         /* Botões de Ação estilo Breeze */
@@ -267,19 +265,19 @@ if __name__ == "__main__":
         }
         
         QPushButton#action_btn:hover {
-            border: 1px solid #3daee9;
+            border: 1px solid #7f8c8d;
             background-color: #31363b;
         }
 
         QPushButton#primary_action {
-            background-color: #3daee9;
-            border: 1px solid #3daee9;
+            background-color: #454a4e;
+            border: 1px solid #7f8c8d;
             color: white;
             font-weight: bold;
         }
         
         QPushButton#primary_action:hover {
-            background-color: #2980b9;
+            background-color: #4d5052;
         }
     """
     app.setStyleSheet(breeze_dark)

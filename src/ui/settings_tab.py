@@ -116,6 +116,13 @@ class SettingsTab(QWidget):
         sens_title.setStyleSheet("font-weight: bold; color: #eff0f1;")
         sens_layout.addWidget(sens_title)
 
+        sens_legend = QLabel(
+            "<b>0.2 (Rígido):</b> Máxima segurança, exige iluminação perfeita.<br>"
+            "<b>0.8 (Permissivo):</b> Acesso mais fácil, menos rigoroso."
+        )
+        sens_legend.setStyleSheet("font-size: 11px; color: #7f8c8d; margin-bottom: 10px;")
+        sens_layout.addWidget(sens_legend)
+
         form_layout = QFormLayout()
         self.spin_threshold = QDoubleSpinBox()
         self.spin_threshold.setRange(0.2, 0.8)
