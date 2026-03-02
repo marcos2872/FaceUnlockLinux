@@ -11,10 +11,11 @@ O **Face Unlock** é um sistema de autenticação facial robusto escrito em Pyth
 ## ✨ Funcionalidades
 
 - 📸 **Cadastro Facial Interativo**: Interface gráfica simples para cadastrar seu rosto em segundos.
-- 🛡️ **Integração com PAM**: Automatiza a configuração para que o `sudo` e a `Lock Screen` usem seu rosto.
+- 🛡️ **Integração com PAM & Polkit**: Automatiza a configuração para que o `sudo`, a `Lock Screen` e até **Ações de Administrador** (como montar discos) usem seu rosto.
 - 👁️ **Detecção de Vivacidade (Liveness)**: Exige que você pisque os olhos para evitar que fotos ou vídeos enganem o sistema.
+- 📺 **Overlay de Feedback Visual**: Uma janela discreta no topo do monitor ativo que avisa quando o sistema está te procurando durante autenticações silenciosas.
+- 🌑 **Modo Escuro (Dark Mode)**: Interface moderna e consistente, mesmo quando executada como root.
 - 📊 **Painel de Controle Desktop**: Gerencie usuários, ajuste a sensibilidade e visualize logs de acesso.
-- 🕵️ **Auditoria Completa**: Logs detalhados de todas as tentativas de acesso (sucessos e falhas).
 
 ---
 
@@ -62,10 +63,11 @@ chmod +x uninstall.sh
 ### 1. Interface Gráfica (Recomendado)
 Você pode abrir o **Face Unlock** diretamente do seu menu de aplicativos ou via terminal:
 ```bash
-~/.local/share/faceunlock/venv/bin/python ~/.local/share/faceunlock/gui.py
+# Para aplicar integrações de sistema, rode com sudo
+sudo ~/.local/share/faceunlock/venv/bin/python ~/.local/share/faceunlock/gui.py
 ```
 - Vá em **Gerenciar Faces** para cadastrar seu primeiro rosto.
-- Vá em **Integração & Sistema** para habilitar o Face Unlock no `sudo`.
+- Vá em **Integração & Sistema** para habilitar o Face Unlock no `sudo` e no `Polkit`.
 
 ### 2. Linha de Comando (CLI)
 O sistema também pode ser operado via terminal a partir do diretório de instalação:
@@ -77,8 +79,8 @@ cd ~/.local/share/faceunlock
 # Autenticação (Modo teste)
 ./venv/bin/python faceunlock.py auth --user seu_nome
 
-# Autenticação (Modo PAM - sem janela)
-./venv/bin/python faceunlock.py auth --user seu_nome --no-gui
+# Autenticação (Modo PAM - com overlay visual)
+./venv/bin/python faceunlock.py auth --user seu_nome --no-gui --overlay
 ```
 
 ---
@@ -86,43 +88,34 @@ cd ~/.local/share/faceunlock
 ## 🔒 Segurança e Privacidade
 
 - **Localização dos Dados**: Os rostos cadastrados são salvos em `/var/lib/faceunlock` (com permissões `700`, apenas root pode ler) ou em `data/faces/` em modo de desenvolvimento.
-- **Formato de Dados**: Não salvamos fotos. Salvamos apenas **embeddings** (vetores matemáticos de 128 dimensões) que representam sua face.
-- **Liveness Detection**: O sistema calcula o *Eye Aspect Ratio (EAR)* em tempo real. O acesso só é liberado se o sistema detectar pelo menos uma piscada real.
+- **Isolamento de Processos**: O feedback visual (overlay) roda em um processo separado para garantir que falhas gráficas não interrompam a autenticação.
+- **Formato de Dados**: Não salvamos fotos. Salvamos apenas **embeddings** (vetores matemáticos de 128 dimensões).
 
 ---
 
 ## 🛠️ Desenvolvimento e Qualidade de Código
 
-Este projeto utiliza **Ruff** para linting e formatação, e **pre-commit** para garantir a qualidade do código antes de cada commit.
-
-### Configurando o ambiente de desenvolvimento:
-1. Instale as dependências (incluindo as de desenvolvimento):
-```bash
-./install_deps.sh
-```
-2. Instale os hooks do pre-commit:
-```bash
-./venv/bin/pre-commit install
-```
+Este projeto utiliza **Ruff** para linting e formatação, e **pre-commit** para garantir a qualidade do código.
 
 ### Comandos úteis:
 - **Formatar código**: `./venv/bin/ruff format .`
 - **Verificar erros**: `./venv/bin/ruff check --fix .`
-- **Rodar pre-commit manualmente**: `./venv/bin/pre-commit run --all-files`
+- **Instalar hooks**: `./venv/bin/pre-commit install`
 
 ---
 
 ## 📁 Estrutura do Projeto
 
-- `faceunlock.py`: Ponto de entrada do CLI.
-- `gui.py`: Ponto de entrada da Interface Gráfica (PySide6).
+- `faceunlock.py`: Ponto de entrada do CLI e motor PAM.
+- `gui.py`: Janela principal do Painel de Controle.
 - `src/`:
-    - `core.py`: Lógica principal de reconhecimento facial.
-    - `liveness.py`: Algoritmo de detecção de piscada.
-    - `storage.py`: Gerenciamento de arquivos e vetores.
-    - `system_integration.py`: Automação de arquivos PAM (`/etc/pam.d/`).
-    - `logger.py`: Sistema de auditoria e histórico de acessos.
-    - `ui/`: Componentes modulares da interface gráfica (Aba de Faces, Testes e Configurações).
+    - `core.py`: Lógica principal de reconhecimento e autenticação.
+    - `storage.py`: Gerenciamento de arquivos e vetores (Multi-local).
+    - `system_integration.py`: Automação de PAM e Polkit.
+    - `ui/`:
+        - `faces_tab.py`, `test_tab.py`, `settings_tab.py`: Componentes da GUI.
+        - `overlay.py`: Gerenciador do feedback visual.
+        - `overlay_window.py`: Janela de overlay (processo isolado).
 
 ---
 
