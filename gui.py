@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QTabWidget,
                              QListWidget, QHBoxLayout, QMessageBox, QInputDialog,
                              QDialog, QProgressBar, QDoubleSpinBox, QFormLayout, QCheckBox, QTextEdit)
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QImage, QPixmap
+from PySide6.QtGui import QImage, QPixmap, QIcon
 
 # Adicionar src ao path
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -26,6 +26,7 @@ class EnrollmentDialog(QDialog):
         super().__init__(parent)
         self.username = username
         self.setWindowTitle(f"Cadastrando Rosto: {username}")
+        self.setWindowIcon(QIcon(os.path.join(SCRIPT_DIR, 'images/icon.png')))
         self.setFixedSize(660, 620)
         layout = QVBoxLayout()
         self.status_label = QLabel(f"Olhe para a câmera e PISQUE os olhos para validar...")
@@ -105,6 +106,7 @@ class LogDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Logs de Acesso")
+        self.setWindowIcon(QIcon(os.path.join(SCRIPT_DIR, 'images/icon.png')))
         self.setFixedSize(600, 400)
         layout = QVBoxLayout()
         self.text_area = QTextEdit()
@@ -124,6 +126,7 @@ class AuthenticationDialog(QDialog):
         self.saved_embeddings = saved_embeddings
         self.threshold = threshold
         self.setWindowTitle(f"Testando Reconhecimento: {username}")
+        self.setWindowIcon(QIcon(os.path.join(SCRIPT_DIR, 'images/icon.png')))
         self.setFixedSize(660, 600)
         layout = QVBoxLayout()
         self.status_label = QLabel("Aguardando detecção...")
@@ -193,6 +196,7 @@ class FaceUnlockApp(QMainWindow):
         super().__init__()
         self.config = load_config()
         self.setWindowTitle("Face Unlock - Painel de Controle")
+        self.setWindowIcon(QIcon(os.path.join(SCRIPT_DIR, 'images/icon.png')))
         self.resize(800, 750)
         self.tabs = QTabWidget()
         self.setCentralWidget(self.tabs)
@@ -262,6 +266,9 @@ class FaceUnlockApp(QMainWindow):
         layout.addWidget(btn_view_logs)
         layout.addWidget(QLabel("<hr>"))
         layout.addWidget(QLabel("<h2>Sensibilidade do Sensor</h2>"))
+        layout.addWidget(QLabel("<p style='color: #7f8c8d;'>Defina o quão rigoroso o sistema deve ser. <br>"
+                               "<b>0.2 (Rígido):</b> Máxima segurança, mas pode falhar se a luz não estiver boa.<br>"
+                               "<b>0.8 (Permissivo):</b> Mais fácil de entrar, mas menos seguro contra fotos.</p>"))
         form_layout = QFormLayout()
         self.spin_threshold = QDoubleSpinBox()
         self.spin_threshold.setRange(0.2, 0.8); self.spin_threshold.setSingleStep(0.01); self.spin_threshold.setValue(self.config["threshold"])
@@ -300,4 +307,5 @@ class FaceUnlockApp(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    app.setWindowIcon(QIcon(os.path.join(SCRIPT_DIR, 'images/icon.png')))
     window = FaceUnlockApp(); window.show(); sys.exit(app.exec())
