@@ -177,10 +177,15 @@ if __name__ == "__main__":
 
     # --- KDE Breeze Dark Theme ---
     breeze_dark = """
-        QMainWindow {
+        QMainWindow, QDialog, QMessageBox {
             background-color: #232629;
+            color: #eff0f1;
         }
         
+        QWidget {
+            color: #eff0f1;
+        }
+
         QWidget#sidebar {
             background-color: #31363b;
             border-right: 1px solid #4d5052;
@@ -188,6 +193,28 @@ if __name__ == "__main__":
         
         QWidget#content_area {
             background-color: #232629;
+        }
+
+        /* Estilo para diálogos e caixas de mensagem */
+        QDialog, QMessageBox, QInputDialog {
+            background-color: #232629;
+        }
+        
+        QDialog QWidget {
+            background-color: transparent;
+        }
+        
+        QDialog QPushButton, QMessageBox QPushButton {
+            background-color: #31363b;
+            border: 1px solid #4d5052;
+            border-radius: 3px;
+            padding: 6px 12px;
+            color: #eff0f1;
+            min-width: 80px;
+        }
+        
+        QDialog QPushButton:hover, QMessageBox QPushButton:hover {
+            border: 1px solid #7f8c8d;
         }
 
         QPushButton {
