@@ -128,14 +128,20 @@ def main():
                 import time
 
                 time.sleep(1)
+                if overlay:
+                    overlay.close()
                 sys.exit(0)
             else:
                 status_update("FALHA NA AUTENTICAÇÃO.", 0)
                 import time
 
                 time.sleep(1)
+                if overlay:
+                    overlay.close()
                 sys.exit(1)
         except Exception as e:
+            if "overlay" in locals() and overlay:
+                overlay.close()
             with open("/tmp/faceunlock_error.log", "a") as f:
                 import traceback
 

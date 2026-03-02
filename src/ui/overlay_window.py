@@ -58,12 +58,16 @@ if __name__ == "__main__":
     window = FeedbackOverlay(user)
     window.show()
 
-    # Timer para fechar automaticamente se o processo pai morrer ou após timeout
+    # Timer para fechar automaticamente se o processo pai morrer ou após timeout (15s)
     def check_parent():
         if os.getppid() == 1:  # Órfão
             sys.exit(0)
 
+    # Timer de segurança (auto-destruição em 15s)
+    QTimer.singleShot(15000, lambda: sys.exit(0))
+
     timer = QTimer()
+
     timer.timeout.connect(check_parent)
     timer.start(1000)
 
