@@ -102,7 +102,6 @@ cd ~/.local/share/faceunlock
     - `system_integration.py`: Automação de arquivos PAM (`/etc/pam.d/`).
     - `logger.py`: Sistema de auditoria e histórico de acessos.
     - `ui/`: Componentes modulares da interface gráfica (Aba de Faces, Testes e Configurações).
-- `NEXT_STEPS.md`: Guia para configurações avançadas manuais.
 
 ---
 
