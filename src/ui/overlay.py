@@ -4,59 +4,66 @@ import sys
 
 
 class OverlayApp:
-    """Gerencia a janela de overlay de forma isolada e segura."""
+    """Gerencia feedback visual (Janela ou Notificação) de forma segura."""
 
     def __init__(self, username):
         self.process = None
 
-        # Se não houver sinal de display, aborta silenciosamente
+        # 1. Tentar enviar uma notificação de sistema (Garantia visual)
+        try:
+            # notify-send é padrão no Fedora/KDE
+            subprocess.Popen(
+                [
+                    "notify-send",
+                    "-a",
+                    "Face Unlock",
+                    "-i",
+                    "camera-photo",
+                    "Face Unlock",
+                    f"Iniciando reconhecimento para {username}...",
+                ],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except Exception:
+            pass
+
+        # 2. Tentar abrir a janela de overlay (Feedback detalhado)
         display = os.environ.get("DISPLAY") or ":0"
         wayland = os.environ.get("WAYLAND_DISPLAY")
-
-        if not display and not wayland:
-            return
 
         try:
             current_dir = os.path.dirname(os.path.abspath(__file__))
             window_script = os.path.join(current_dir, "overlay_window.py")
             python_exe = sys.executable
 
-            # Detecta o usuário real para evitar rodar interface como root
-            real_user = os.environ.get("SUDO_USER") or os.environ.get("USER")
-            if real_user == "root" or not real_user:
-                # Tenta pegar o dono da pasta home mais comum
-                import pwd
+            # Busca o usuário real (UID 1000 é o padrão do primeiro usuário)
+            import pwd
 
-                real_user = pwd.getpwuid(os.getuid())[0]
-                if real_user == "root":
-                    # Busca o usuário logado via comando 'who' se necessário
-                    try:
-                        real_user = subprocess.check_output(["whoami"]).decode().strip()
-                    except Exception:
-                        real_user = "marcos"  # Fallback seguro para seu sistema
+            try:
+                real_user_info = pwd.getpwuid(1000)
+                real_user = real_user_info.pw_name
+            except Exception:
+                real_user = os.environ.get("SUDO_USER") or "marcos"
 
             cmd = [python_exe, window_script, username]
 
-            # Prepara ambiente limpo para o usuário
-            env = {
-                "DISPLAY": display,
-                "PATH": os.environ.get("PATH", ""),
-                "HOME": f"/home/{real_user}",
-                "XDG_RUNTIME_DIR": f"/run/user/{os.getuid() if os.getuid() != 0 else 1000}",
-            }
+            # Ambiente isolado para o usuário comum
+            env = os.environ.copy()
+            env["DISPLAY"] = display
             if wayland:
                 env["WAYLAND_DISPLAY"] = wayland
+            env["XDG_RUNTIME_DIR"] = "/run/user/1000"
 
-            # Se somos root, usamos 'sudo -u' para rodar como usuário comum
-            if os.geteuid() == 0 and real_user != "root":
-                cmd = ["sudo", "-u", real_user, "DISPLAY=" + display] + cmd
+            # Se somos root, tentamos lançar como o usuário comum
+            if os.geteuid() == 0:
+                cmd = ["sudo", "-u", real_user] + cmd
 
-            # Lança o processo de forma totalmente independente
             self.process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
-                start_new_session=True,  # Isola o processo
+                start_new_session=True,
                 env=env,
             )
         except Exception:
@@ -68,11 +75,6 @@ class OverlayApp:
     def close(self):
         if self.process:
             try:
-                # Tenta fechar de forma amigável
                 self.process.terminate()
-                self.process.wait(timeout=0.2)
             except Exception:
-                try:
-                    self.process.kill()
-                except Exception:
-                    pass
+                pass
