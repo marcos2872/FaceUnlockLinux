@@ -1,0 +1,7 @@
+{
+    "username": "test_user",
+    "created_at": "2026-03-02T10:52:54.213184",
+    "model_version": "dlib_v1",
+    "threshold": 0.6,
+    "num_embeddings": 5
+}
