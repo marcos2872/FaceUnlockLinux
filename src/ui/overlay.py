@@ -19,10 +19,19 @@ class OverlayApp:
             window_script = os.path.join(current_dir, "overlay_window.py")
             python_exe = sys.executable
 
+            # Se rodando como root (PAM/Polkit), tenta rodar o overlay como o usuário real
+            # No Linux, a variável SUDO_USER ou LOGNAME nos diz quem é o usuário real
+            real_user = os.environ.get("SUDO_USER") or os.environ.get("LOGNAME")
+
+            cmd = [python_exe, window_script, username]
+
+            # Se somos root e sabemos quem é o usuário real, usamos 'sudo -u'
+            if os.geteuid() == 0 and real_user and real_user != "root":
+                cmd = ["sudo", "-u", real_user] + cmd
+
             # Lança o processo de forma independente
-            # Usamos subprocess para que um crash gráfico não afete a IA
             self.process = subprocess.Popen(
-                [python_exe, window_script, username],
+                cmd,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 env=os.environ.copy(),
