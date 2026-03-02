@@ -15,7 +15,10 @@ def get_pam_line(username):
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "faceunlock.py"
     )
     python_path = sys.executable  # Usa o python do venv atual
-    return f"auth sufficient pam_exec.so stdout {python_path} {script_path} auth --user {username} --no-gui"
+    return (
+        f"auth sufficient pam_exec.so stdout {python_path} {script_path} "
+        f"auth --user {username} --no-gui"
+    )
 
 
 def check_integration(service_name, username):
@@ -34,7 +37,6 @@ def check_integration(service_name, username):
     # Busca por termos essenciais em vez da linha exata
     search_term = f"faceunlock.py auth --user {username}"
     try:
-
         with open(path) as f:
             for line in f:
                 if search_term in line and "pam_exec.so" in line:
@@ -62,17 +64,19 @@ def update_integration(service_name, username, enable=True):
                 # Cria o diretório em /etc se necessário (raro)
                 os.makedirs(os.path.dirname(path), exist_ok=True)
                 # Lê o conteúdo do fallback para o novo arquivo em /etc
-                with open(fallback_path, "r") as f:
+                with open(fallback_path) as f:
                     content = f.read()
                 with open(path, "w") as f:
                     f.write(content)
             except PermissionError:
-                return False, "Erro de permissão ao criar arquivo em /etc/pam.d/. Execute como root."
+                return (
+                    False,
+                    "Erro de permissão ao criar arquivo em /etc/pam.d/. Execute como root.",
+                )
         else:
             return False, f"Arquivo de serviço {service_name} não encontrado em /etc ou /usr/lib."
 
     try:
-
         with open(path) as f:
             lines = f.readlines()
 

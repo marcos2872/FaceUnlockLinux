@@ -4,11 +4,11 @@ import sys
 
 # Adicionar src ao path usando o caminho absoluto do script
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.join(SCRIPT_DIR, 'src'))
+sys.path.append(os.path.join(SCRIPT_DIR, "src"))
 
-from core import authenticate_user, capture_embeddings
-from logger import log_access
-from storage import list_users, load_user_data, save_user_data
+from core import authenticate_user, capture_embeddings  # noqa: E402
+from logger import log_access  # noqa: E402
+from storage import list_users, load_user_data, save_user_data  # noqa: E402
 
 
 def main():
@@ -18,13 +18,19 @@ def main():
     # Comando Enrol (Cadastro)
     enrol_parser = subparsers.add_parser("enrol", help="Cadastra um novo rosto")
     enrol_parser.add_argument("--user", required=True, help="Nome do usuário para cadastrar")
-    enrol_parser.add_argument("--frames", type=int, default=30, help="Número de frames para capturar (padrão 30)")
+    enrol_parser.add_argument(
+        "--frames", type=int, default=30, help="Número de frames para capturar (padrão 30)"
+    )
 
     # Comando Auth (Autenticação)
     auth_parser = subparsers.add_parser("auth", help="Autentica um usuário cadastrado")
     auth_parser.add_argument("--user", required=True, help="Nome do usuário para autenticar")
-    auth_parser.add_argument("--threshold", type=float, default=0.5, help="Distância máxima de tolerância (padrão 0.5)")
-    auth_parser.add_argument("--no-gui", action="store_true", help="Executa sem abrir janela de vídeo (modo PAM)")
+    auth_parser.add_argument(
+        "--threshold", type=float, default=0.5, help="Distância máxima de tolerância (padrão 0.5)"
+    )
+    auth_parser.add_argument(
+        "--no-gui", action="store_true", help="Executa sem abrir janela de vídeo (modo PAM)"
+    )
 
     # Comando List (Listar Usuários)
     subparsers.add_parser("list", help="Lista usuários cadastrados")
@@ -56,38 +62,48 @@ def main():
             print("Erro: Nenhum dado capturado.")
 
     elif args.command == "auth":
-        saved_embeddings, metadata = load_user_data(args.user)
-        if saved_embeddings is None:
-            print(f"Erro: Usuário '{args.user}' não encontrado.")
-            sys.exit(1)
-            
-        is_authenticated = authenticate_user(
-            args.user, 
-            saved_embeddings, 
-            threshold=args.threshold,
-            show_preview=not args.no_gui
-        )
-        
-        # Logar o acesso (essencial para o PAM)
-        access_type = "PAM (No-GUI)" if args.no_gui else "Manual CLI"
-        log_access(args.user, is_authenticated, f"{access_type} | Threshold: {args.threshold}")
-        
-        if is_authenticated:
-            print(f"\n[OK] Bem-vindo, {args.user}! Autenticação bem sucedida.")
-            sys.exit(0)
-        else:
-            print(f"\n[FAIL] Autenticação falhou para {args.user}.")
+        try:
+            saved_embeddings, metadata = load_user_data(args.user)
+            if saved_embeddings is None:
+                with open("/tmp/faceunlock_error.log", "a") as f:
+                    f.write(f"Erro: Usuário '{args.user}' não encontrado no storage.\n")
+                sys.exit(1)
+
+            is_authenticated = authenticate_user(
+                args.user,
+                saved_embeddings,
+                threshold=args.threshold,
+                show_preview=not args.no_gui,
+            )
+
+            # Logar o acesso (essencial para o PAM)
+            access_type = "PAM (No-GUI)" if args.no_gui else "Manual CLI"
+            log_access(args.user, is_authenticated, f"{access_type} | Threshold: {args.threshold}")
+
+            if is_authenticated:
+                print(f"\n[OK] Bem-vindo, {args.user}! Autenticação bem sucedida.")
+                sys.exit(0)
+            else:
+                print(f"\n[FAIL] Autenticação falhou para {args.user}.")
+                sys.exit(1)
+        except Exception as e:
+            with open("/tmp/faceunlock_error.log", "a") as f:
+                import traceback
+
+                f.write(f"CRASH: {str(e)}\n{traceback.format_exc()}\n")
             sys.exit(1)
 
     elif args.command == "list":
         users = list_users()
         if users:
             print("Usuários cadastrados:")
-            for user in users: print(f" - {user}")
+            for user in users:
+                print(f" - {user}")
         else:
             print("Nenhum usuário cadastrado.")
     else:
         parser.print_help()
+
 
 if __name__ == "__main__":
     main()

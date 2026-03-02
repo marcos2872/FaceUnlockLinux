@@ -8,7 +8,7 @@ import numpy as np
 def validate():
     print("--- Validando Setup (Fedora KDE) ---")
     print(f"OpenCV: {cv2.__version__}")
-    
+
     # 1. Testar acesso à câmera
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
@@ -34,6 +34,7 @@ def validate():
 
     print("--- Setup Validado com Sucesso ---")
     return True
+
 
 if __name__ == "__main__":
     if not validate():

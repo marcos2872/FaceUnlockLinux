@@ -73,7 +73,8 @@ class SettingsTab(QWidget):
         layout.addWidget(
             QLabel(
                 "<p style='color: #7f8c8d;'>Defina o quão rigoroso o sistema deve ser. <br>"
-                "<b>0.2 (Rígido):</b> Máxima segurança, mas pode falhar se a luz não estiver boa.<br>"
+                "<b>0.2 (Rígido):</b> Máxima segurança, mas pode falhar se "
+                "a luz não estiver boa.<br>"
                 "<b>0.8 (Permissivo):</b> Mais fácil de entrar, mas menos seguro contra fotos.</p>"
             )
         )
