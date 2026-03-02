@@ -145,7 +145,7 @@ class FaceUnlockApp(QMainWindow):
         icon_label.setPixmap(QIcon.fromTheme(icon_name).pixmap(22, 22))
 
         text_label = QLabel(text)
-        text_label.setStyleSheet("font-size: 13px; background: transparent; color: inherit;")
+        text_label.setStyleSheet("font-size: 13px; background: transparent; color: #ffffff;")
 
         layout.addWidget(icon_label)
         layout.addWidget(text_label)

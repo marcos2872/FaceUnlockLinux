@@ -83,10 +83,6 @@ class SettingsTab(QWidget):
         pam_title.setStyleSheet("font-weight: bold; color: #3daee9;")
         pam_layout.addWidget(pam_title)
 
-        self.selected_user_label = QLabel("Aguardando seleção de usuário...")
-        self.selected_user_label.setStyleSheet("color: #fdbc4b;")
-        pam_layout.addWidget(self.selected_user_label)
-
         self.check_sudo = QCheckBox("Habilitar Face Unlock para comandos 'Sudo'")
         self.check_lock = QCheckBox("Habilitar para Tela de Bloqueio (KDE Lock)")
         self.check_login = QCheckBox("Habilitar para Login do Sistema (SDDM)")
@@ -157,12 +153,10 @@ class SettingsTab(QWidget):
     def update_integration_checks(self):
         username = self.main_app.get_selected_user()
         if not username:
-            self.selected_user_label.setText("⚠️ Selecione um usuário na lista")
             for cb in [self.check_sudo, self.check_lock, self.check_login, self.check_polkit]:
                 cb.setChecked(False)
             return
 
-        self.selected_user_label.setText(f"Configurando para: {username}")
         self.check_sudo.setChecked(check_integration("sudo", username) is True)
         self.check_lock.setChecked(check_integration("lockscreen", username) is True)
         self.check_login.setChecked(check_integration("login", username) is True)
