@@ -1,9 +1,9 @@
 import os
 import sys
 
-from PySide6.QtCore import Qt, QTimer
-
 # Importação pesada aqui, em um processo separado
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import QApplication, QLabel, QProgressBar, QVBoxLayout, QWidget
 
 
@@ -40,8 +40,20 @@ class FeedbackOverlay(QWidget):
         layout.addWidget(self.progress)
         self.setLayout(layout)
 
-        screen = QApplication.primaryScreen().geometry()
-        self.setGeometry((screen.width() - 400) // 2, 30, 400, 80)
+        # --- Lógica de Posicionamento no Monitor Ativo ---
+        # 1. Pega o monitor onde o mouse está no momento
+        cursor_pos = QCursor.pos()
+        screen = QApplication.screenAt(cursor_pos) or QApplication.primaryScreen()
+        screen_geo = screen.geometry()
+
+        width, height = 400, 80
+        # 2. Calcula o X para centralizar horizontalmente
+        # Somamos o screen_geo.x() para monitor correto
+        x = screen_geo.x() + (screen_geo.width() - width) // 2
+        # 3. Define o Y (distância do topo do monitor)
+        y = screen_geo.y() + 40
+
+        self.setGeometry(x, y, width, height)
 
     def update_data(self, message, progress_val):
         self.status_label.setText(message)
@@ -67,7 +79,6 @@ if __name__ == "__main__":
     QTimer.singleShot(15000, lambda: sys.exit(0))
 
     timer = QTimer()
-
     timer.timeout.connect(check_parent)
     timer.start(1000)
 
