@@ -12,7 +12,7 @@ echo "2/3. Criando ambiente virtual Python..."
 python3 -m venv venv
 source venv/bin/activate
 pip install --upgrade pip setuptools wheel
-pip install numpy opencv-python PySide6
+pip install numpy opencv-python PySide6 ruff
 
 # 3. Instalar bibliotecas de IA (Compilando dlib)
 echo "3/3. Instalando face-recognition (Compilando dlib, isso pode demorar)..."
