@@ -65,17 +65,42 @@ class EnrollmentDialog(QDialog):
 
         self.setLayout(layout)
 
-        self.cap = cv2.VideoCapture(0)
+        self.cap = None
         self.embeddings = []
         self.blinks = 0
         self.eye_closed = False
+
+        # Iniciar o timer, mas não ligar a câmera ainda no construtor
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_frame)
+
+        # Tenta inicializar a câmera com um pequeno delay para a janela aparecer primeiro
+        QTimer.singleShot(500, self.init_camera)
+
+    def init_camera(self):
+        self.status_label.setText("Conectando ao sensor de vídeo...")
+        # Forçar o backend V4L2 no Linux costuma ser mais rápido/estável
+        self.cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
+
+        if not self.cap.isOpened():
+            QMessageBox.critical(
+                self,
+                "Erro de Câmera",
+                "A webcam não responde. Verifique se ela está conectada ou sendo usada.",
+            )
+            self.reject()
+            return
+        self.status_label.setText("Câmera OK! Posicione-se e pisque os olhos.")
         self.timer.start(33)
 
     def update_frame(self):
+        if not self.cap or not self.cap.isOpened():
+            return
+
         ret, frame = self.cap.read()
-        if not ret:
+        if not ret or frame is None:
+            self.status_label.setText("ERRO: Perda de sinal da câmera.")
+            self.timer.stop()
             return
         frame = cv2.flip(frame, 1)
         face_loc, encoding, landmarks = process_face_frame(frame)

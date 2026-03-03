@@ -7,7 +7,8 @@ INSTALL_DIR="$HOME/.local/share/faceunlock"
 DESKTOP_FILE="$HOME/.local/share/applications/faceunlock.desktop"
 CONFIG_DIR="$HOME/.config/faceunlock"
 CACHE_DIR="$HOME/.cache/faceunlock"
-SYSTEM_DIR="/var/lib/faceunlock"
+SYSTEM_DATA_DIR="/var/lib/faceunlock"
+SYSTEM_LOG_DIR="/var/log/faceunlock"
 
 # 0. Aviso de Segurança (PAM)
 echo "IMPORTANTE: Antes de desinstalar, certifique-se de que desativou a integração facial no painel de controle do Face Unlock."
@@ -41,17 +42,17 @@ echo "3/4. Removendo configurações e logs locais..."
 [ -d "$CACHE_DIR" ] && rm -rf "$CACHE_DIR"
 
 # 4. Remover Dados de Sistema (Requer Sudo)
-if [ -d "$SYSTEM_DIR" ]; then
-    echo "4/4. Detectado diretório de sistema em $SYSTEM_DIR"
-    read -p "Deseja remover também os rostos cadastrados e dados de sistema? (requer sudo) [s/N]: " confirm
+echo "4/4. Limpando dados de sistema..."
+if [ -d "$SYSTEM_DATA_DIR" ] || [ -d "$SYSTEM_LOG_DIR" ]; then
+    read -p "Deseja remover também os rostos e logs de sistema (/var/lib e /var/log)? [s/N]: " confirm
     if [[ "$confirm" =~ ^[sS]$ ]]; then
-        echo "Removendo $SYSTEM_DIR (solicitando sudo)..."
-        sudo rm -rf "$SYSTEM_DIR"
+        echo "Removendo dados de sistema (solicitando sudo)..."
+        sudo rm -rf "$SYSTEM_DATA_DIR" "$SYSTEM_LOG_DIR"
     else
-        echo "Mantendo $SYSTEM_DIR (seus rostos cadastrados foram preservados)."
+        echo "Mantendo dados de sistema (seus rostos cadastrados foram preservados)."
     fi
 else
-    echo "4/4. Diretório de sistema não encontrado."
+    echo "4/4. Diretórios de sistema não encontrados."
 fi
 
 echo ""

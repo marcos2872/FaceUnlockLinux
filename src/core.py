@@ -142,6 +142,11 @@ def authenticate_user(
     Exige reconhecimento E vivacidade (piscada).
     """
     cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        if status_callback:
+            status_callback("Erro: Câmera não encontrada.", 0)
+        return False
+
     frames_processed = 0
     matches_found = 0
     blinks_detected = 0

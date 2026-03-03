@@ -1,7 +1,17 @@
 import json
 import os
 
-CONFIG_PATH = os.path.expanduser("~/.config/faceunlock/settings.json")
+SYSTEM_CONFIG_DIR = "/var/lib/faceunlock"
+SYSTEM_CONFIG_PATH = os.path.join(SYSTEM_CONFIG_DIR, "settings.json")
+USER_CONFIG_PATH = os.path.expanduser("~/.config/faceunlock/settings.json")
+
+# Prioriza o local de sistema se ele existir e for gravável (ou se estivermos como root)
+if os.path.exists(SYSTEM_CONFIG_DIR) and (
+    os.access(SYSTEM_CONFIG_DIR, os.W_OK) or os.geteuid() == 0
+):
+    CONFIG_PATH = SYSTEM_CONFIG_PATH
+else:
+    CONFIG_PATH = USER_CONFIG_PATH
 
 DEFAULT_CONFIG = {"threshold": 0.5, "num_enrol_frames": 30, "num_auth_frames": 10}
 

@@ -64,16 +64,45 @@ class AuthenticationDialog(QDialog):
         layout.addWidget(self.btn_close)
 
         self.setLayout(layout)
-        self.cap = cv2.VideoCapture(0)
+
+        self.cap = None
         self.blinks = 0
         self.eye_closed = False
+
+        # Timer de captura
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_frame)
+
+        # Inicialização assíncrona da câmera
+        QTimer.singleShot(500, self.init_camera)
+
+    def init_camera(self):
+        self.status_label.setText("Conectando ao sensor...")
+        self.cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
+
+        if not self.cap or not self.cap.isOpened():
+            self.cap = cv2.VideoCapture(0)
+
+        if not self.cap or not self.cap.isOpened():
+            QMessageBox.critical(
+                self,
+                "Erro de Câmera",
+                "O sensor de vídeo não responde. Verifique se a câmera está ocupada.",
+            )
+            self.reject()
+            return
+
+        self.status_label.setText("Câmera OK! Verificando rosto...")
         self.timer.start(33)
 
     def update_frame(self):
+        if not self.cap or not self.cap.isOpened():
+            return
+
         ret, frame = self.cap.read()
-        if not ret:
+        if not ret or frame is None:
+            self.status_label.setText("Sinal da câmera perdido.")
+            self.timer.stop()
             return
         frame = cv2.flip(frame, 1)
         face_loc, current_encoding, landmarks = process_face_frame(frame)
