@@ -8,26 +8,27 @@ This document serves as the foundational guide for AI assistants working on the 
 - **Paths**: 
     - Application files: `~/.local/share/faceunlock/`
     - System/Security data: `/var/lib/faceunlock/` (Requires root)
-    - Configuration: `~/.config/faceunlock/`
-    - Logs: `~/.cache/faceunlock/`
+    - Configuration: `~/.config/faceunlock/settings.json` (User) ou `/var/lib/faceunlock/settings.json` (Sistema - Prioritário).
+    - Logs: `~/.cache/faceunlock/` (User) ou `/var/log/faceunlock/` (Sistema).
 
 ## 🛡️ Security & Privacy
 - **No Photos**: Never store raw images or video frames on disk. Only 128-dimensional face embeddings are permitted for storage.
-- **PAM/Polkit Safety**: Any modification to `/etc/pam.d/` files is critical. When removing lines, use robust pattern matching (searching for `faceunlock.py auth --user`) instead of exact string matching.
-- **Root Context**: When launching graphical elements from a root process (Sudo/Polkit), always attempt to use `sudo -u <real_user>` to avoid X11/Wayland display restrictions.
+- **PAM/Polkit Safety**: Any modification to `/etc/pam.d/` files is critical. Quando removendo linhas, use padrões flexíveis (`faceunlock.py auth --user`) para identificar a integração.
+- **Root Context**: Quando lançando elementos gráficos de um processo root (Sudo/Polkit), sempre tente usar `sudo -u <real_user>` para evitar restrições de display X11/Wayland.
+- **Selective Overlay**: O overlay gráfico deve ser desabilitado para serviços de logon (SDDM) e tela de bloqueio (kscreenlocker) para evitar crashes fatais de ambiente gráfico root. Use apenas em `sudo` e `polkit`.
 
 ## 🎨 UI & Aesthetics
-- **Dark Mode**: The application uses a global Dark Theme (Fusion style) defined in `gui.py`. Avoid hardcoding bright colors in child components.
-- **Overlay**: Visual feedback should be centered on the active monitor (detected via cursor position).
-- **Feedback**: Ensure every long-running operation has clear visual feedback (Progress bars, notifications, or overlays).
+- **Dark Mode**: A aplicação usa o tema global Dark (estilo Fusion) definido em `gui.py`. Evite hardcoding de cores claras.
+- **Overlay**: O feedback visual deve ser centralizado no monitor ativo.
+- **Async Camera**: A inicialização da câmera deve ser assíncrona (via QTimer) para evitar que a interface gráfica fique "Não Respondendo" durante o carregamento do sensor.
 
 ## 🐍 Coding Standards
-- **Python**: Target Python 3.10+.
-- **Imports**: Use `# noqa: E402` for late imports required by `sys.path` modifications.
-- **Validation**: Every feature or bug fix must be verified through both CLI and GUI manual tests.
+- **Python**: Alvo Python 3.10+.
+- **Imports**: Use `# noqa: E402` para imports tardios exigidos por modificações no `sys.path`.
+- **Validation**: Toda feature ou correção deve ser validada via CLI e GUI. Em caso de falha de hardware (câmera), o sistema deve retornar `False` imediatamente para permitir o fallback de senha no PAM.
 
 ## 📝 Git & Commit Standards
-- **Conventional Commits**: Adhere to the Conventional Commits specification.
+- **Conventional Commits**: Siga a especificação Conventional Commits.
     - `feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `test:`, `chore:`.
-- **Quality Control**: Always run `pre-commit run --all-files` (which includes `ruff` linting and formatting) before finalizing changes.
-- **Language**: Commit descriptions should be concise and preferred in Portuguese.
+- **Quality Control**: Sempre rode `pre-commit run --all-files` (ruff linting e format) antes de finalizar mudanças.
+- **Language**: Descrições de commit concisas e preferencialmente em Português.

@@ -13,7 +13,7 @@ O **Face Unlock** é um sistema de autenticação facial robusto escrito em Pyth
 - 📸 **Cadastro Facial Interativo**: Interface gráfica simples para cadastrar seu rosto em segundos.
 - 🛡️ **Integração com PAM & Polkit**: Automatiza a configuração para que o `sudo`, a `Lock Screen` e até **Ações de Administrador** (como montar discos) usem seu rosto.
 - 👁️ **Detecção de Vivacidade (Liveness)**: Exige que você pisque os olhos para evitar que fotos ou vídeos enganem o sistema.
-- 📺 **Overlay de Feedback Visual**: Uma janela discreta no topo do monitor ativo que avisa quando o sistema está te procurando durante autenticações silenciosas.
+- 📺 **Overlay de Feedback Visual**: Uma janela discreta no topo do monitor ativo que avisa quando o sistema está te procurando (ativo em `sudo` e `polkit`).
 - 🌑 **Modo Escuro (Dark Mode)**: Interface moderna e consistente, mesmo quando executada como root.
 - 📊 **Painel de Controle Desktop**: Gerencie usuários, ajuste a sensibilidade e visualize logs de acesso.
 
@@ -38,13 +38,13 @@ chmod +x install_deps.sh
 ./install_deps.sh
 ```
 
-2. **Configurar Aplicativo** (Move para `~/.local` e cria atalho no menu):
+2. **Configurar Aplicativo** (Move para `~/.local`, configura `/var/lib` e cria atalho):
 ```bash
 chmod +x setup_app.sh
 ./setup_app.sh
 ```
 
-O sistema será movido para `~/.local/share/faceunlock` e um atalho será criado no seu menu de aplicativos (KDE/Gnome/etc).
+O sistema será movido para `~/.local/share/faceunlock` e um atalho será criado no seu menu de aplicativos. **No Fedora, o script aplica automaticamente o contexto SELinux (`chcon`) necessário.**
 
 ---
 
@@ -61,35 +61,23 @@ chmod +x uninstall.sh
 ## 🖥️ Como Usar
 
 ### 1. Interface Gráfica (Recomendado)
-Você pode abrir o **Face Unlock** diretamente do seu menu de aplicativos ou via terminal:
-```bash
-# Para aplicar integrações de sistema, rode com sudo
-sudo ~/.local/share/faceunlock/venv/bin/python ~/.local/share/faceunlock/gui.py
-```
-- Vá em **Gerenciar Faces** para cadastrar seu primeiro rosto.
-- Vá em **Integração & Sistema** para habilitar o Face Unlock no `sudo` e no `Polkit`.
+Você pode abrir o **Face Unlock** diretamente do seu menu de aplicativos. Ele solicitará sua senha (via `kdesu`) para permitir a modificação das regras de sistema (PAM).
 
-### 2. Linha de Comando (CLI)
-O sistema também pode ser operado via terminal a partir do diretório de instalação:
-```bash
-cd ~/.local/share/faceunlock
-# Cadastro
-./venv/bin/python faceunlock.py enrol --user seu_nome
+- Vá em **Gerenciar Usuários** para cadastrar seu rosto.
+- Vá em **Integração & Sistema** para habilitar o Face Unlock no `sudo`, `login` e `tela de bloqueio`.
 
-# Autenticação (Modo teste)
-./venv/bin/python faceunlock.py auth --user seu_nome
-
-# Autenticação (Modo PAM - com overlay visual)
-./venv/bin/python faceunlock.py auth --user seu_nome --no-gui --overlay
-```
+### 2. Logs e Diagnóstico
+Para verificar tentativas de acesso e erros de hardware:
+- **Logs de Usuário**: `~/.cache/faceunlock/access.log`
+- **Logs de Sistema (Root)**: `/var/log/faceunlock/access.log`
 
 ---
 
 ## 🔒 Segurança e Privacidade
 
-- **Localização dos Dados**: Os rostos cadastrados são salvos em `/var/lib/faceunlock` (com permissões `700`, apenas root pode ler) ou em `data/faces/` em modo de desenvolvimento.
-- **Isolamento de Processos**: O feedback visual (overlay) roda em um processo separado para garantir que falhas gráficas não interrompam a autenticação.
-- **Formato de Dados**: Não salvamos fotos. Salvamos apenas **embeddings** (vetores matemáticos de 128 dimensões).
+- **Localização dos Dados**: Os rostos cadastrados são salvos em `/var/lib/faceunlock` (apenas root) ou em `data/faces/`.
+- **Ambientes Restritos**: O overlay visual é desativado no Logon (SDDM) e na Tela de Bloqueio para evitar falhas gráficas, rodando de forma silenciosa e segura nesses ambientes.
+- **Fallback Automático**: Se a câmera não for encontrada ou falhar, o sistema pula imediatamente para o prompt de senha.
 
 ---
 
@@ -100,22 +88,6 @@ Este projeto utiliza **Ruff** para linting e formatação, e **pre-commit** para
 ### Comandos úteis:
 - **Formatar código**: `./venv/bin/ruff format .`
 - **Verificar erros**: `./venv/bin/ruff check --fix .`
-- **Instalar hooks**: `./venv/bin/pre-commit install`
-
----
-
-## 📁 Estrutura do Projeto
-
-- `faceunlock.py`: Ponto de entrada do CLI e motor PAM.
-- `gui.py`: Janela principal do Painel de Controle.
-- `src/`:
-    - `core.py`: Lógica principal de reconhecimento e autenticação.
-    - `storage.py`: Gerenciamento de arquivos e vetores (Multi-local).
-    - `system_integration.py`: Automação de PAM e Polkit.
-    - `ui/`:
-        - `faces_tab.py`, `test_tab.py`, `settings_tab.py`: Componentes da GUI.
-        - `overlay.py`: Gerenciador do feedback visual.
-        - `overlay_window.py`: Janela de overlay (processo isolado).
 
 ---
 
