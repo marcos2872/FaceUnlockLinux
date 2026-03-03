@@ -30,7 +30,7 @@ cat <<EOF > "$DESKTOP_DIR/faceunlock.desktop"
 [Desktop Entry]
 Name=Face Unlock
 Comment=Gerenciar Autenticação Facial
-Exec=kdesu -c "$INSTALL_DIR/venv/bin/python $INSTALL_DIR/gui.py"
+Exec=kdesu $INSTALL_DIR/venv/bin/python $INSTALL_DIR/gui.py
 Icon=$INSTALL_DIR/images/icon.png
 Terminal=false
 Type=Application
