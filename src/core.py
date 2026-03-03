@@ -34,27 +34,42 @@ def enhance_frame(frame):
 def process_face_frame(frame):
     """
     Processa um único frame para detectar rostos e landmarks.
-    Retorna: (face_location, face_encoding, face_landmarks) ou (None, None, None)
+    Redimensiona internamente para aumentar a velocidade (FPS).
     """
-    # Aplicar melhoria de imagem antes da detecção
-    enhanced = enhance_frame(frame)
-    rgb_frame = cv2.cvtColor(enhanced, cv2.COLOR_BGR2RGB)
+    # 1. Redimensionar para velocidade (Manter aspect ratio)
+    small_frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
 
-    # Tenta detecção normal
-    face_locations = face_recognition.face_locations(rgb_frame)
+    # 2. Aplicar melhoria de imagem (CLAHE) no frame menor
+    enhanced = enhance_frame(small_frame)
+    rgb_small_frame = cv2.cvtColor(enhanced, cv2.COLOR_BGR2RGB)
+
+    # 3. Tenta detecção no frame otimizado
+    face_locations = face_recognition.face_locations(rgb_small_frame)
 
     if not face_locations:
-        # Se falhar, tenta com upsample (melhor para rostos distantes ou escuros)
-        face_locations = face_recognition.face_locations(rgb_frame, number_of_times_to_upsample=1)
+        # Se falhar, tenta com upsample uma única vez
+        face_locations = face_recognition.face_locations(
+            rgb_small_frame, number_of_times_to_upsample=1
+        )
 
     if not face_locations:
         return None, None, None
 
-    # Pegamos apenas a primeira face detectada
-    face_encoding = face_recognition.face_encodings(rgb_frame, face_locations)[0]
-    face_landmarks = face_recognition.face_landmarks(rgb_frame, face_locations)[0]
+    # 4. Extrair dados
+    face_encoding = face_recognition.face_encodings(rgb_small_frame, face_locations)[0]
+    face_landmarks = face_recognition.face_landmarks(rgb_small_frame, face_locations)[0]
 
-    return face_locations[0], face_encoding, face_landmarks
+    # 5. Re-escalar a localização da face para o tamanho original do frame
+    top, right, bottom, left = face_locations[0]
+    face_loc_orig = (top * 2, right * 2, bottom * 2, left * 2)
+
+    # Re-escalar landmarks para o frame original
+    for facial_feature in face_landmarks.keys():
+        face_landmarks[facial_feature] = [
+            (int(x * 2), int(y * 2)) for (x, y) in face_landmarks[facial_feature]
+        ]
+
+    return face_loc_orig, face_encoding, face_landmarks
 
 
 def capture_embeddings(username, num_frames=30):

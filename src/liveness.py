@@ -17,9 +17,10 @@ def eye_aspect_ratio(eye_landmarks):
     return ear
 
 
-def check_blink(face_landmarks, threshold=0.22):
+def check_blink(face_landmarks, threshold=0.27):
     """
     Verifica se ambos os olhos estão fechados baseado nos marcos faciais.
+    Threshold ajustado para 0.27 para equilibrar precisão e velocidade.
     """
     if "left_eye" not in face_landmarks or "right_eye" not in face_landmarks:
         return False
