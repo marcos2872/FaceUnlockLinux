@@ -10,11 +10,12 @@ SYSTEM_DIR = "/var/lib/faceunlock"
 SCRIPT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOCAL_DIR = os.path.join(SCRIPT_DIR, "data", "faces")
 
-# Escolher o diretório base (prioriza o de sistema se existir)
-if os.path.exists(SYSTEM_DIR) and os.access(SYSTEM_DIR, os.W_OK):
-    BASE_DIR = SYSTEM_DIR
-else:
-    BASE_DIR = LOCAL_DIR
+
+def get_base_dir():
+    """Retorna o diretório base preferencial para gravação."""
+    if os.path.exists(SYSTEM_DIR) and os.access(SYSTEM_DIR, os.W_OK):
+        return SYSTEM_DIR
+    return LOCAL_DIR
 
 
 def get_user_path(username):
@@ -34,7 +35,15 @@ def save_user_data(username, embeddings, threshold=0.6, model_version="dlib_v1")
     Salva os embeddings (NumPy) e metadados (JSON).
     embeddings: lista ou array de shape (N, 128)
     """
-    user_dir = get_user_path(username)
+    # Para novos cadastros, tenta usar o diretório base preferencial
+    base_dir = get_base_dir()
+    user_dir = os.path.join(base_dir, username)
+
+    # Se o usuário já existir no outro diretório, continua usando o existente
+    existing_dir = get_user_path(username)
+    if os.path.exists(existing_dir):
+        user_dir = existing_dir
+
     os.makedirs(user_dir, exist_ok=True)
 
     # Caminhos
@@ -79,10 +88,28 @@ def load_user_data(username):
 
 
 def list_users():
-    """Lista usuários cadastrados."""
-    if not os.path.exists(BASE_DIR):
-        return []
-    return [d for d in os.listdir(BASE_DIR) if os.path.isdir(os.path.join(BASE_DIR, d))]
+    """Lista usuários cadastrados em ambos os diretórios (Sistema e Local)."""
+    users = set()
+
+    # Busca no diretório de sistema
+    if os.path.exists(SYSTEM_DIR):
+        try:
+            for d in os.listdir(SYSTEM_DIR):
+                if os.path.isdir(os.path.join(SYSTEM_DIR, d)):
+                    users.add(d)
+        except PermissionError:
+            pass
+
+    # Busca no diretório local do projeto
+    if os.path.exists(LOCAL_DIR):
+        try:
+            for d in os.listdir(LOCAL_DIR):
+                if os.path.isdir(os.path.join(LOCAL_DIR, d)):
+                    users.add(d)
+        except PermissionError:
+            pass
+
+    return sorted(list(users))
 
 
 def delete_user(username):

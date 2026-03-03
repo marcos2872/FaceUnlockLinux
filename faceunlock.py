@@ -46,12 +46,14 @@ def main():
 
     if args.command == "init":
         SYSTEM_DIR = "/var/lib/faceunlock"
-        print(f"Configurando diretório de sistema em {SYSTEM_DIR}...")
+        LOG_SYSTEM_DIR = "/var/log/faceunlock"
+        print("Configurando diretórios de sistema...")
         try:
-            if not os.path.exists(SYSTEM_DIR):
-                os.makedirs(SYSTEM_DIR, mode=0o700, exist_ok=True)
-            os.chmod(SYSTEM_DIR, 0o700)
-            print("Sucesso! Diretório de sistema pronto.")
+            for d in [SYSTEM_DIR, LOG_SYSTEM_DIR]:
+                if not os.path.exists(d):
+                    os.makedirs(d, mode=0o755, exist_ok=True)
+                os.chmod(d, 0o755)
+            print("Sucesso! Diretórios /var/lib/faceunlock e /var/log/faceunlock prontos.")
             sys.exit(0)
         except Exception as e:
             print(f"Erro: {e}")

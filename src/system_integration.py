@@ -6,18 +6,20 @@ PAM_SERVICES = {
     "lockscreen": "/etc/pam.d/kde",
     "login": "/etc/pam.d/sddm",
     "polkit": "/etc/pam.d/polkit-1",
+    "kscreenlocker": "/etc/pam.d/kscreensaver",
 }
 
 
-def get_pam_line(username):
+def get_pam_line(username, use_overlay=True):
     """Gera a linha exata que deve ser inserida no PAM."""
     script_path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "faceunlock.py"
     )
     python_path = sys.executable  # Usa o python do venv atual
+    overlay_flag = "--overlay" if use_overlay else ""
     return (
         f"auth sufficient pam_exec.so quiet {python_path} {script_path} "
-        f"auth --user {username} --no-gui --overlay"
+        f"auth --user {username} --no-gui {overlay_flag}"
     )
 
 
@@ -51,7 +53,11 @@ def check_integration(service_name, username):
 def update_integration(service_name, username, enable=True):
     """Adiciona ou remove a linha do PAM. Requer root."""
     path = PAM_SERVICES.get(service_name)
-    line = get_pam_line(username)
+
+    # Definimos se o overlay deve ser usado para este serviço específico
+    # Evitamos overlay em SDDM/KDE Lock para prevenir crashes de X11/Wayland root
+    use_overlay = service_name in ["sudo", "polkit"]
+    line = get_pam_line(username, use_overlay=use_overlay)
 
     if not path:
         return False, f"Serviço {service_name} não configurado."

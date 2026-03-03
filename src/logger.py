@@ -3,15 +3,29 @@ import os
 
 LOG_DIR = os.path.expanduser("~/.cache/faceunlock")
 LOG_FILE = os.path.join(LOG_DIR, "access.log")
+SYSTEM_LOG_DIR = "/var/log/faceunlock"
+SYSTEM_LOG_FILE = os.path.join(SYSTEM_LOG_DIR, "access.log")
 
 
 def setup_logger():
-    if not os.path.exists(LOG_DIR):
-        os.makedirs(LOG_DIR, exist_ok=True)
+    # Se rodando como root, tenta usar o log do sistema
+    if os.geteuid() == 0:
+        try:
+            if not os.path.exists(SYSTEM_LOG_DIR):
+                os.makedirs(SYSTEM_LOG_DIR, exist_ok=True)
+            logging.basicConfig(filename=SYSTEM_LOG_FILE, level=logging.INFO, format="%(message)s")
+            return
+        except Exception:
+            pass
 
-    # Configuração do logger para adicionar apenas a mensagem
-    # formatamos a data manualmente para ter mais controle
-    logging.basicConfig(filename=LOG_FILE, level=logging.INFO, format="%(message)s")
+    # Fallback para o log do usuário
+    try:
+        if not os.path.exists(LOG_DIR):
+            os.makedirs(LOG_DIR, exist_ok=True)
+        logging.basicConfig(filename=LOG_FILE, level=logging.INFO, format="%(message)s")
+    except (PermissionError, OSError):
+        # Se falhar em ambos, desativa o logging para não quebrar o PAM
+        logging.basicConfig(handlers=[logging.NullHandler()], level=logging.INFO)
 
 
 def log_access(username, success, message=""):
